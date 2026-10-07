@@ -1,0 +1,3335 @@
+{
+  "model_version": "V5.3",
+  "document_ids": [
+    "UEnMdV2AGoaAuKxAsSwcg563nSb",
+    "E3SDdy2reoTeVjxiiZhcszw8nve",
+    "QIQZd7QOCo7LQIxmJv0cHFb6nCg",
+    "U0Zydx0uSoxaxZxutUKc6lbDnBe",
+    "VqnJdDTrIoMrPyxOX7fcBvyande"
+  ],
+  "heading_inventory_count": 318,
+  "research_document_heading_count": 39,
+  "coverage_basis": "fresh 2026-10-07 main-document inventory plus complete local DRCCGE research specification",
+  "active_equation_family_count": 42,
+  "passed_equation_family_count": 42,
+  "coverage_percent": 100.0,
+  "gate_status": "PASS",
+  "modules": [
+    {
+      "module_id": "historical_identification_causal_hmm",
+      "document_sections": [
+        "2",
+        "2.1",
+        "11",
+        "14",
+        "22.2",
+        "22.3",
+        "22.12"
+      ],
+      "equations": [
+        "Gaussian HMM filter",
+        "cross-fitted AIPW",
+        "measurement error"
+      ],
+      "role": "estimator",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/taiwan_dynamic_game_hmm.py",
+        "work/simulate_taiwan_causal_evolution_v37.py",
+        "work/closed_prewar_system_v47.py"
+      ],
+      "symbols": [
+        "fit_gaussian_hmm",
+        "causal_local_effect",
+        "ClosedPrewarEvolutionSystem"
+      ],
+      "state_owner": "ClosedPrewarEvolutionSystem.pressure_belief",
+      "clock": "monthly prewar",
+      "pathwise": false,
+      "inputs": [
+        "historical indicators",
+        "pressure treatment",
+        "observed outcomes"
+      ],
+      "outputs": [
+        "pressure_belief",
+        "causal_pressure_effect"
+      ],
+      "feedback_consumers": [
+        "prewar_game_evolution_feedback",
+        "stratified_competing_survival"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "prewar_game_evolution_feedback",
+      "document_sections": [
+        "3",
+        "3.1",
+        "15.7",
+        "22.4",
+        "22.5"
+      ],
+      "equations": [
+        "quantal response",
+        "replicator dynamics",
+        "state feedback"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/closed_prewar_system_v47.py"
+      ],
+      "symbols": [
+        "_softmax",
+        "strategy",
+        "replicator"
+      ],
+      "state_owner": "ClosedPrewarEvolutionSystem.strategy",
+      "clock": "monthly prewar",
+      "pathwise": true,
+      "inputs": [
+        "pressure_belief",
+        "actor_support",
+        "economic_capital"
+      ],
+      "outputs": [
+        "strategy",
+        "actor_support"
+      ],
+      "feedback_consumers": [
+        "growth_defense_capital",
+        "opinion_election_arms_pipeline",
+        "stratified_competing_survival"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "continuous_graphon_mfg",
+      "document_sections": [
+        "21.3",
+        "24.2",
+        "24.3",
+        "25.7",
+        "26.3",
+        "29.3",
+        "31.5",
+        "4",
+        "4.1",
+        "geometry 11",
+        "geometry 12",
+        "geometry 5.2"
+      ],
+      "equations": [
+        "continuous HJB",
+        "conservative Fokker-Planck",
+        "GPU semi-implicit finite volume",
+        "optional differentiable method-of-lines",
+        "four-layer directed time-varying block Graphon",
+        "Major-Minor GMFG",
+        "state-action joint mean field",
+        "common-noise jump generator",
+        "Fisher-Rao geodesic",
+        "WFR reaction-transport splitting",
+        "GeomLoss Sinkhorn cost",
+        "pathwise kernel interval ensemble",
+        "finite-network back-projection",
+        "mean and worst-type exploitability bounds"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/continuous_multipop_mfg_v47.py",
+        "work/fp_solvers_v52.py",
+        "work/cognitive_geometry_v52.py",
+        "work/simulate_taiwan_multidomain_v42.py",
+        "work/simulate_taiwan_fully_closed_v52.py"
+      ],
+      "symbols": [
+        "GRAPHON_LAYERS",
+        "MAJOR_TYPES",
+        "ACTION_CHANNELS",
+        "_effective_graphon",
+        "_multilayer_fields",
+        "_finite_network_fields",
+        "_apply_jump_generator",
+        "_joint_action_response",
+        "mean_exploitability_bound",
+        "worst_type_exploitability_bound",
+        "finite_network_payoff_deviation",
+        "cognitive_transport_cost",
+        "FokkerPlanckSolver",
+        "_torch_fvm_step",
+        "_torchdiffeq_step",
+        "_torch_thomas",
+        "legacy_explicit",
+        "max_mass_residual",
+        "CognitiveInformationGeometry",
+        "fisher_rao_mix",
+        "wfr_reaction_step",
+        "sinkhorn_profile",
+        "SamplesLoss",
+        "reach"
+      ],
+      "state_owner": "ContinuousMultiPopulationMFG owns density, engagement mass, major actions, minor joint actions, sampled kernels and cognitive transport cost",
+      "clock": "monthly same-path with inner HJB-FP-major-minor fixed point; annual piecewise-constant GeomLoss friction refresh",
+      "pathwise": true,
+      "inputs": [
+        "same-path progress, damage, shortage, inflation and finance",
+        "same-path command, network and social contagion",
+        "master-clock common noise and existing damage/leader jump marks"
+      ],
+      "outputs": [
+        "support and engagement mass",
+        "five-channel joint action field",
+        "major-player actions",
+        "network action field",
+        "Sinkhorn cognitive friction",
+        "equilibrium quality diagnostics"
+      ],
+      "feedback_consumers": [
+        "age_stratified_social_contagion",
+        "campaign_deds_multidomain",
+        "labor_skill_mobilization",
+        "wartime_inflation_finance"
+      ],
+      "solver": "implicit tridiagonal HJB policy iteration; CUDA conservative upwind finite volume plus backward-Euler diffusion; Fisher-Rao/WFR splitting; optional torchdiffeq calibration; GeomLoss tensorized Sinkhorn",
+      "convergence_criterion": "joint density-state-action-major fixed point <5e-4; mass <1e-10; finite density; reported mean/worst exploitability and finite-network payoff deviation",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-07",
+          "unit": "dimensionless structural kernel/action coefficients",
+          "identification": "scenario_prior",
+          "uncertainty": "pathwise frozen logistic-normal interval ensemble; not labelled posterior"
+        }
+      ],
+      "invariants": [
+        "conditional belief mass one",
+        "nonnegative density",
+        "directed kernel rows normalized",
+        "bounded engagement mass",
+        "single master event clock",
+        "hard-capacity flow remains separate"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v52.py",
+        "outputs/taiwan_v52_diagnostic_only.json",
+        "outputs/taiwan_v52_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v52_graphon_gmfg_simulation.json"
+    },
+    {
+      "module_id": "age_stratified_social_contagion",
+      "document_sections": [
+        "4.2",
+        "24.4",
+        "26.11",
+        "28.1",
+        "28.7"
+      ],
+      "equations": [
+        "six-state competing contagion",
+        "complex threshold",
+        "Levy marks",
+        "Hawkes memory"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/wartime_social_contagion.py"
+      ],
+      "symbols": [
+        "WartimeSocialContagionSystem",
+        "hawkes",
+        "levy",
+        "conservation_error"
+      ],
+      "state_owner": "WartimeSocialContagionSystem.compartments",
+      "clock": "four weekly substeps per campaign month",
+      "pathwise": true,
+      "inputs": [
+        "MFG thresholds",
+        "casualties",
+        "inflation",
+        "network state"
+      ],
+      "outputs": [
+        "social support",
+        "mobilization",
+        "fatigue",
+        "panic"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "unbalanced_optimal_transport",
+      "document_sections": [
+        "5",
+        "5.1",
+        "20.2",
+        "26.3",
+        "geometry 6",
+        "geometry 16"
+      ],
+      "equations": [
+        "KL-relaxed Sinkhorn",
+        "lossy conversion",
+        "unmet demand",
+        "directed Finsler cost",
+        "KL-relaxed echelon Sinkhorn"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/closed_prewar_system_v47.py",
+        "work/simulate_taiwan_multidomain_v42.py",
+        "work/operational_constraints_v47.py"
+      ],
+      "symbols": [
+        "_resource_ot",
+        "entropy_transport_fulfillment",
+        "marginal_penalty",
+        "_unbalanced_transport",
+        "finsler_cost",
+        "front_priority"
+      ],
+      "state_owner": "ClosedPrewarEvolutionSystem.ot_allocation",
+      "clock": "monthly",
+      "pathwise": true,
+      "inputs": [
+        "resource supply",
+        "conversion cost",
+        "combat demand"
+      ],
+      "outputs": [
+        "allocation",
+        "unmet demand",
+        "transport loss"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "operations_network_flow_metric_search"
+      ],
+      "solver": "KL-relaxed Sinkhorn",
+      "convergence_criterion": "marginal and nonnegative-flow residuals pass diagnostic",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "marginal and nonnegative-flow residuals pass diagnostic",
+        "unbalanced Sinkhorn residual below 1e-5"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "leader_gated_jump_process",
+      "document_sections": [
+        "6",
+        "6.1",
+        "25.12",
+        "25.13"
+      ],
+      "equations": [
+        "finite stage gates",
+        "interception",
+        "succession",
+        "marked jumps"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/closed_prewar_system_v47.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "leader_stage",
+        "leader_attempt_hazard",
+        "leader_continuity",
+        "intercept_probability"
+      ],
+      "state_owner": "campaign_state.leader_continuity",
+      "clock": "monthly prewar and wartime",
+      "pathwise": true,
+      "inputs": [
+        "leader pressure",
+        "intelligence",
+        "institutional interception"
+      ],
+      "outputs": [
+        "leader_continuity",
+        "succession state",
+        "jump marks"
+      ],
+      "feedback_consumers": [
+        "endogenous_alliance_stackelberg",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "stratified_competing_survival",
+      "document_sections": [
+        "7",
+        "7.1",
+        "7.2",
+        "7.3",
+        "22.6",
+        "22.13"
+      ],
+      "equations": [
+        "stratified cause-specific Cox",
+        "Aalen-Johansen",
+        "Fine-Gray",
+        "AFT"
+      ],
+      "role": "estimator",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/competing_risk_survival_v47.py"
+      ],
+      "symbols": [
+        "StratifiedCompetingRiskSurvival",
+        "_integrate",
+        "fine_gray_hazard",
+        "aft_delay_months"
+      ],
+      "state_owner": "StratifiedCompetingRiskSurvival.last_result",
+      "clock": "monthly 2026-2100 competing-risk calendar",
+      "pathwise": false,
+      "inputs": [
+        "prewar covariates",
+        "pressure_belief",
+        "identified force prior"
+      ],
+      "outputs": [
+        "cause CIF",
+        "Fine-Gray hazard",
+        "AFT delay"
+      ],
+      "feedback_consumers": [
+        "endogenous_alliance_stackelberg",
+        "pathwise_terminal_aggregation"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "growth_defense_capital",
+      "document_sections": [
+        "15.1",
+        "15.2",
+        "15.3",
+        "15.4",
+        "15.5",
+        "15.6",
+        "15.7",
+        "15.8"
+      ],
+      "equations": [
+        "growth accumulation",
+        "perpetual inventory",
+        "defense burden",
+        "theater conversion",
+        "seven long-term structural scenarios"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_econ_military_joint_model.py",
+        "work/closed_prewar_system_v47.py"
+      ],
+      "symbols": [
+        "GROWTH_2026",
+        "STOCK_DEPRECIATION",
+        "economic_capital",
+        "military_capital"
+      ],
+      "state_owner": "ClosedPrewarEvolutionSystem.economic_capital/military_capital",
+      "clock": "monthly 2026-2100 prewar calendar",
+      "pathwise": true,
+      "inputs": [
+        "observed growth",
+        "defense burden",
+        "depreciation"
+      ],
+      "outputs": [
+        "economic_capital",
+        "military_capital"
+      ],
+      "feedback_consumers": [
+        "prewar_game_evolution_feedback",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "work/SIPRI-Milex-data-1949-2025_v1.2.xlsx",
+          "publisher": "SIPRI",
+          "observation_date": "1949-2025",
+          "unit": "military expenditure series",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "opinion_election_arms_pipeline",
+      "document_sections": [
+        "24.1",
+        "24.2",
+        "24.3",
+        "24.4",
+        "24.5",
+        "24.6",
+        "24.7"
+      ],
+      "equations": [
+        "latent polling filter",
+        "Graphon groups",
+        "election state",
+        "six-stage arms pipeline"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/closed_prewar_system_v47.py"
+      ],
+      "symbols": [
+        "filtered_poll",
+        "party_state",
+        "population_latent",
+        "pipeline",
+        "delivered_capability"
+      ],
+      "state_owner": "ClosedPrewarEvolutionSystem.population_latent/pipeline",
+      "clock": "monthly prewar",
+      "pathwise": true,
+      "inputs": [
+        "group beliefs",
+        "poll measurement",
+        "orders",
+        "delivery delays"
+      ],
+      "outputs": [
+        "filtered_poll",
+        "party_state",
+        "delivered_capability"
+      ],
+      "feedback_consumers": [
+        "endogenous_alliance_stackelberg",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "endogenous_alliance_stackelberg",
+      "document_sections": [
+        "9",
+        "17.1-17.8",
+        "22.7",
+        "25.6",
+        "25.6.1"
+      ],
+      "equations": [
+        "US leader choice",
+        "independent Japan response",
+        "base-support floor",
+        "five-case simplex"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/endogenous_intervention_v47.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "EndogenousInterventionChoiceModel",
+        "japan_base",
+        "stackelberg_alliance"
+      ],
+      "state_owner": "EndogenousInterventionChoiceModel.last_choice",
+      "clock": "prewar choice and monthly wartime response",
+      "pathwise": true,
+      "inputs": [
+        "support",
+        "readiness",
+        "AFT delay",
+        "financial capacity"
+      ],
+      "outputs": [
+        "five-case probabilities",
+        "base access",
+        "intervention path"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "pathwise_terminal_aggregation"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "campaign_deds_multidomain",
+      "document_sections": [
+        "9.1",
+        "16.2-16.8",
+        "18.2-18.6",
+        "26.4",
+        "26.5",
+        "26.20"
+      ],
+      "equations": [
+        "DEDS",
+        "heterogeneous attrition",
+        "missile/interception",
+        "ACE",
+        "semi-Markov regimes",
+        "kill web/OODA"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "conflict_regime",
+        "regime_duration",
+        "kill",
+        "ooda",
+        "intercept"
+      ],
+      "state_owner": "simulate_mechanisms campaign state",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "alliance regime",
+        "forces",
+        "stocks",
+        "controls",
+        "terrain"
+      ],
+      "outputs": [
+        "attrition",
+        "damage",
+        "domain control",
+        "regime"
+      ],
+      "feedback_consumers": [
+        "operations_network_flow_metric_search",
+        "finance_fiscal_money_tax_debt_assets",
+        "spatial_population_control"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "operations_network_flow_metric_search",
+      "document_sections": [
+        "19.2-19.6",
+        "19.13.1-19.13.9",
+        "20.1-20.4",
+        "21.2",
+        "21.4",
+        "21.5",
+        "21.6",
+        "26.14",
+        "geometry 3",
+        "geometry 16",
+        "geometry 17"
+      ],
+      "equations": [
+        "multicommodity flow",
+        "METRIC",
+        "repair queue",
+        "Bayesian search",
+        "robust facility coverage",
+        "network percolation",
+        "sub-Riemannian echelon adjacency",
+        "Finsler reachability"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/operational_constraints_v47.py"
+      ],
+      "symbols": [
+        "DynamicOperationalConstraintSystem",
+        "spare_pipeline",
+        "selected_facilities",
+        "corridor_adjacency",
+        "search_prior",
+        "finsler_reachability",
+        "corridor_adjacency"
+      ],
+      "state_owner": "DynamicOperationalConstraintSystem inventory/spares/integrity",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "stocks",
+        "damage",
+        "corridors",
+        "repair demand",
+        "search observations"
+      ],
+      "outputs": [
+        "front inventory",
+        "flow",
+        "availability",
+        "detection"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips"
+      ],
+      "solver": "capacity-constrained flow, queue and Bayesian recursions",
+      "convergence_criterion": "stock residual < 1e-7",
+      "data": [
+        {
+          "source": "outputs/台海V3.6_GIS机动走廊摘要.json",
+          "publisher": "OpenStreetMap and AWS Terrain derived dataset",
+          "observation_date": "2026-09-28",
+          "unit": "corridor geometry and elevation-derived friction",
+          "identification": "derived"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "stock residual < 1e-7",
+        "directed reachability remains in (0,1]"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "geospatial_pnt",
+      "document_sections": [
+        "19.13.1",
+        "21.2",
+        "26.4",
+        "geometry 5.3",
+        "geometry 12"
+      ],
+      "equations": [
+        "information-matrix fusion",
+        "GNSS/inertial/terrestrial/terrain",
+        "integrity",
+        "affine-invariant SPD covariance geodesic"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/operational_constraints_v47.py",
+        "work/simulate_taiwan_3d_pnt_v41.py"
+      ],
+      "symbols": [
+        "DynamicGeospatialPNTSystem",
+        "posterior_precision",
+        "terrain_observability",
+        "_affine_invariant_geodesic",
+        "minimum_covariance_eigenvalue"
+      ],
+      "state_owner": "DynamicGeospatialPNTSystem.covariance",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "terrain observability",
+        "sky visibility",
+        "sensor damage",
+        "cyber state"
+      ],
+      "outputs": [
+        "PNT covariance",
+        "integrity",
+        "position error"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "operations_network_flow_metric_search"
+      ],
+      "solver": "information-filter covariance fusion",
+      "convergence_criterion": "precision-covariance inverse residual < 1e-7",
+      "data": [
+        {
+          "source": "outputs/台海V3.6_GIS机动走廊摘要.json",
+          "publisher": "OpenStreetMap and AWS Terrain derived dataset",
+          "observation_date": "2026-09-28",
+          "unit": "terrain observability index",
+          "identification": "derived"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "precision-covariance inverse residual < 1e-7",
+        "covariance remains symmetric positive definite"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "rolling_pomdp_robust_game",
+      "document_sections": [
+        "3.1",
+        "11",
+        "19.13.9",
+        "25.11"
+      ],
+      "equations": [
+        "partial observation filter",
+        "receding horizon",
+        "robust adverse scenario",
+        "best response"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/rolling_differential_game_v47.py"
+      ],
+      "symbols": [
+        "RollingHorizonDifferentialGame",
+        "_belief_update",
+        "scenario_multiplier",
+        "np.min(value"
+      ],
+      "state_owner": "RollingHorizonDifferentialGame._belief/controls",
+      "clock": "monthly with six-month horizon",
+      "pathwise": true,
+      "inputs": [
+        "delayed observations",
+        "belief covariance",
+        "six-month state forecast"
+      ],
+      "outputs": [
+        "strike",
+        "defense",
+        "production",
+        "repair",
+        "negotiation controls"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets"
+      ],
+      "solver": "distributionally robust receding-horizon best response",
+      "convergence_criterion": "best-response residual < 1e-4",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "best-response residual < 1e-4"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "spatial_population_control",
+      "document_sections": [
+        "9.2",
+        "16.6",
+        "19.13.6",
+        "26.4",
+        "geometry 3",
+        "geometry 16",
+        "geometry 17"
+      ],
+      "equations": [
+        "regional adjacency diffusion",
+        "population weighting",
+        "administrative weighting",
+        "organized defense",
+        "persistence",
+        "directed graph Finsler propagation",
+        "spectral connectivity"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/spatial_control_network_v47.py"
+      ],
+      "symbols": [
+        "SpatialControlNetwork",
+        "population_control",
+        "administrative_control",
+        "organized_defense",
+        "finsler_transition",
+        "graph_spectral_gap",
+        "attacker_pnt"
+      ],
+      "state_owner": "SpatialControlNetwork.zone_control",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "zone control",
+        "adjacency",
+        "terrain",
+        "administration",
+        "organized defense"
+      ],
+      "outputs": [
+        "population control",
+        "administrative control",
+        "persistent broad control"
+      ],
+      "feedback_consumers": [
+        "principal_agent_governance",
+        "pathwise_terminal_aggregation"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant",
+        "positive graph spectral gap",
+        "bounded reachability"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "labor_firms_supply_collapse",
+      "document_sections": [
+        "23.2",
+        "26.6",
+        "26.7",
+        "26.8",
+        "26.9",
+        "26.10",
+        "26.12"
+      ],
+      "equations": [
+        "skill-stratified manpower",
+        "training delay",
+        "fatigue/mismatch",
+        "firm production",
+        "SIR distress",
+        "four-domain collapse"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "actor_manpower",
+        "actor_training",
+        "actor_labor_fatigue",
+        "actor_firm_factors",
+        "actor_collapse"
+      ],
+      "state_owner": "simulate_mechanisms actor labor/firm/collapse states",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "manpower",
+        "skills",
+        "orders",
+        "inputs",
+        "fatigue",
+        "damage"
+      ],
+      "outputs": [
+        "trained labor",
+        "firm output",
+        "distress",
+        "collapse state"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "finance_fiscal_money_tax_debt_assets"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "finance_fiscal_money_tax_debt_assets",
+      "document_sections": [
+        "23.1",
+        "23.3",
+        "23.4",
+        "23.5",
+        "23.6",
+        "23.7"
+      ],
+      "equations": [
+        "central/local debt",
+        "Bohn rule",
+        "Laffer tax",
+        "monetization",
+        "NKPC jump",
+        "credit/asset/default"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_four_party_financial_v45.py"
+      ],
+      "symbols": [
+        "local_debt",
+        "bohn",
+        "tax_elasticity",
+        "monetization",
+        "expected_inflation",
+        "sovereign_hazard"
+      ],
+      "state_owner": "FourPartyFinancialSystem balance sheets",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "damage",
+        "macro balances",
+        "aid",
+        "tax base",
+        "war spending"
+      ],
+      "outputs": [
+        "credit",
+        "payments",
+        "debt",
+        "reserves",
+        "fiscal capacity",
+        "financial stress"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "open_dsge_hank_mundell_fleming"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "work/simulate_four_party_financial_v45.py:SOURCE_URLS",
+          "publisher": "NFRA/PBOC/IMF/Fed/US Treasury/Taiwan CBC/BOJ/Japan MOF",
+          "observation_date": "2025-2026",
+          "unit": "balance-sheet ratios",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "dynamic_mr_cge_mrio_gravity_chips",
+      "document_sections": [
+        "27.2",
+        "27.3",
+        "27.4",
+        "27.5",
+        "27.6",
+        "27.8",
+        "27.9",
+        "27.10",
+        "27.18-27.25"
+      ],
+      "equations": [
+        "140-node MRIO",
+        "structural gravity shock",
+        "Armington",
+        "goods/factor clearing",
+        "capital accumulation",
+        "government/external accounts",
+        "chip substitution"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_equilibrium_v47.py",
+        "work/simulate_dual_circulation_v44.py"
+      ],
+      "symbols": [
+        "DynamicMultiRegionalCGE",
+        "armington_elasticity",
+        "government_balance",
+        "external_account_residual",
+        "china_substitution"
+      ],
+      "state_owner": "DynamicMultiRegionalCGE output/price/capital/labor",
+      "clock": "monthly with inner equilibrium",
+      "pathwise": true,
+      "inputs": [
+        "final demand",
+        "capital",
+        "labor",
+        "trade shocks",
+        "finance",
+        "damage"
+      ],
+      "outputs": [
+        "output",
+        "prices",
+        "trade balance",
+        "government balance",
+        "shadow prices"
+      ],
+      "feedback_consumers": [
+        "open_dsge_hank_mundell_fleming",
+        "finance_fiscal_money_tax_debt_assets",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "damped mixed-complementarity iteration",
+      "convergence_criterion": "goods and factor complementarity residuals < 2e-3",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/2016-2022/2022_SML.csv and data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "OECD and CEADs",
+          "observation_date": "2017/2022",
+          "unit": "monetary input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "goods and factor complementarity residuals < 2e-3"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "open_dsge_hank_mundell_fleming",
+      "document_sections": [
+        "23.6",
+        "27.7",
+        "27.11",
+        "27.12",
+        "27.15"
+      ],
+      "equations": [
+        "IS",
+        "NKPC",
+        "Taylor",
+        "UIP",
+        "bounded expectations",
+        "heterogeneous MPC households",
+        "CGE-DSGE fixed point"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_equilibrium_v47.py"
+      ],
+      "symbols": [
+        "OpenEconomyDSGE",
+        "household_shares",
+        "policy_rate",
+        "exchange_new",
+        "max_outer_iterations"
+      ],
+      "state_owner": "OpenEconomyDSGE expectations/rates/exchange/households",
+      "clock": "monthly with inner and outer fixed points",
+      "pathwise": true,
+      "inputs": [
+        "CGE output and prices",
+        "trade balance",
+        "risk",
+        "fiscal capacity"
+      ],
+      "outputs": [
+        "demand",
+        "investment",
+        "inflation",
+        "rates",
+        "exchange rate"
+      ],
+      "feedback_consumers": [
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "finance_fiscal_money_tax_debt_assets"
+      ],
+      "solver": "bounded-expectations fixed point nested with CGE",
+      "convergence_criterion": "DSGE residual < 8e-4 and outer residual < 3e-3",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "DSGE residual < 8e-4 and outer residual < 3e-3"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "actual_bilateral_aid_clearing",
+      "document_sections": [
+        "23.3",
+        "26.13",
+        "27.11"
+      ],
+      "equations": [
+        "donor outflow equals recipient inflow",
+        "one-month settlement lag"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_four_party_financial_v45.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "register_realized_aid",
+        "pending_aid_out",
+        "pending_aid_in",
+        "us_aid"
+      ],
+      "state_owner": "FourPartyFinancialSystem pending/cumulative aid",
+      "clock": "monthly",
+      "pathwise": true,
+      "inputs": [
+        "donor capacity",
+        "recipient need",
+        "intervention regime"
+      ],
+      "outputs": [
+        "pending donor outflow",
+        "pending recipient inflow",
+        "settled aid"
+      ],
+      "feedback_consumers": [
+        "finance_fiscal_money_tax_debt_assets",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "one-period stock-flow settlement",
+      "convergence_criterion": "donor-recipient residual < 1e-10",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "donor-recipient residual < 1e-10"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "rare_tail_hawkes_evt_importance",
+      "document_sections": [
+        "24.11",
+        "25.3",
+        "25.4",
+        "25.9"
+      ],
+      "equations": [
+        "dependent tail regime",
+        "Hawkes memory",
+        "GPD marks",
+        "importance likelihood ratio"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_multidomain_v42.py",
+        "work/simulate_taiwan_fully_closed_v47.py"
+      ],
+      "symbols": [
+        "TAIL_TARGET_PROB",
+        "common_hawkes_memory",
+        "importance_weight",
+        "weighted_mean"
+      ],
+      "state_owner": "campaign path tail regime/weight",
+      "clock": "path draw plus monthly event intensity",
+      "pathwise": true,
+      "inputs": [
+        "tail regime",
+        "event history",
+        "target and proposal laws"
+      ],
+      "outputs": [
+        "jump marks",
+        "Hawkes intensity",
+        "likelihood weight"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "pathwise_terminal_aggregation"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "principal_agent_governance",
+      "document_sections": [
+        "10",
+        "10.1",
+        "10.2",
+        "25.14"
+      ],
+      "equations": [
+        "heterogeneous agent types",
+        "recruitment/transitions",
+        "isolation/leakage",
+        "resistance attenuation"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "taiwan_agent_type_share",
+        "taiwan_proxy_capacity",
+        "taiwan_proxy_leakage"
+      ],
+      "state_owner": "campaign state Taiwan agent distribution",
+      "clock": "monthly wartime",
+      "pathwise": true,
+      "inputs": [
+        "local elites",
+        "control",
+        "isolation",
+        "benefits",
+        "repression"
+      ],
+      "outputs": [
+        "agent-type shares",
+        "proxy capacity",
+        "leakage",
+        "resistance attenuation"
+      ],
+      "feedback_consumers": [
+        "spatial_population_control",
+        "pathwise_terminal_aggregation"
+      ],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "pathwise_terminal_aggregation",
+      "document_sections": [
+        "25.17",
+        "26.1",
+        "26.16",
+        "26.20",
+        "27.26",
+        "28.2-28.5"
+      ],
+      "equations": [
+        "absorbing broad control",
+        "endogenous intervention mixture",
+        "force-onset joint probability",
+        "importance-weighted aggregation"
+      ],
+      "role": "terminal_model",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/simulate_taiwan_fully_closed_v47.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "broad_control_achieved",
+        "choice.probabilities",
+        "force_paths",
+        "importance_weights"
+      ],
+      "state_owner": "campaign broad_control event and V4.7 aggregator",
+      "clock": "5/10/15/20/30-year reporting",
+      "pathwise": true,
+      "inputs": [
+        "force CIF",
+        "intervention probabilities",
+        "absorbing control paths",
+        "importance weights"
+      ],
+      "outputs": [
+        "conditional broad-control probability",
+        "unconditional joint probability",
+        "uncertainty intervals"
+      ],
+      "feedback_consumers": [],
+      "solver": "bounded monthly state transition or closed-form estimator",
+      "convergence_criterion": "finite, bounded, normalized state and module invariant",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite values",
+        "declared bounds",
+        "finite, bounded, normalized state and module invariant"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v47.py",
+        "outputs/taiwan_v47_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v47_fully_closed_simulation.json"
+    },
+    {
+      "module_id": "robust_dynamic_mechanism",
+      "document_sections": [
+        "3",
+        "12",
+        "13",
+        "14"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "RobustDynamicMechanismDesigner",
+        "risk_scenarios",
+        "robust_premium"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.robust_dynamic_mechanism",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "robust target and recursive reputation"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "alliance_burden_vcg",
+      "document_sections": [
+        "5"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "_vcg_alliance",
+        "truthful_utility",
+        "alliance_multiplier"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.alliance_burden_vcg",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "responsibility, balanced transfers and alliance response"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "aid_moral_hazard_contract",
+      "document_sections": [
+        "6"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "contract_effort",
+        "milestone",
+        "aid_multiplier"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.aid_moral_hazard_contract",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "hidden effort, audited milestone and realized aid"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "procurement_delivery_mechanism",
+      "document_sections": [
+        "7"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "procurement_factor",
+        "delay_risk",
+        "resilience"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.procurement_delivery_mechanism",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "multi-attribute procurement and military production"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "information_design_bce",
+      "document_sections": [
+        "8"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "information_support_shift",
+        "panic_reduction",
+        "precision"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.information_design_bce",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "disclosure precision, support and panic"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "ceasefire_verification_contract",
+      "document_sections": [
+        "9"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "ceasefire_entry_multiplier",
+        "ceasefire_break_multiplier",
+        "settlement_multiplier"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.ceasefire_verification_contract",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "verification, compliance and semi-Markov transitions"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "multitask_governance_contract",
+      "document_sections": [
+        "10"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "governance_recruitment_multiplier",
+        "governance_trust_bonus",
+        "governance_leakage_reduction"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.multitask_governance_contract",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "agent recruitment, trust and leakage"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "trade_relief_index_insurance",
+      "document_sections": [
+        "11"
+      ],
+      "equations": [
+        "IC",
+        "IR",
+        "budget/resource feasibility",
+        "dynamic commitment"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_mechanism_design_v48.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "sanction_relief",
+        "insurance_transfer",
+        "gross_claim"
+      ],
+      "state_owner": "RobustDynamicMechanismDesigner.trade_relief_index_insurance",
+      "clock": "monthly wartime before downstream state transitions",
+      "pathwise": true,
+      "inputs": [
+        "same-path public state",
+        "private-type scenario priors",
+        "resource ceilings"
+      ],
+      "outputs": [
+        "trade relief, blockade input and zero-sum insurance"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "principal_agent_governance"
+      ],
+      "solver": "closed-form allocation plus finite robust menu and recursive contract state",
+      "convergence_criterion": "IC, IR, budget, resource, limited-liability, commitment and transfer residuals below 1e-9",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/R7qkdxtxCoIgqQxs0lgcrSofnVM",
+          "publisher": "Mechanism-design extension specification",
+          "observation_date": "2026-10-05",
+          "unit": "dimensionless documented scenario prior",
+          "identification": "scenario_prior"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-05",
+          "unit": "documented dimensionless scenario prior unless overridden by public input",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "finite bounded factors",
+        "zero-sum transfers",
+        "truthful utility nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v48.py",
+        "outputs/taiwan_v48_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v48_mechanism_simulation.json"
+    },
+    {
+      "module_id": "four_party_energy_maxflow_mincut",
+      "document_sections": [
+        "30.1-30.8",
+        "geometry 9",
+        "geometry 13",
+        "geometry 15",
+        "geometry 17"
+      ],
+      "equations": [
+        "multicarrier maximum flow",
+        "minimum cut dual",
+        "inventory balance",
+        "damage-repair recursion",
+        "energy-war feedback",
+        "port-Hamiltonian midpoint balance",
+        "Dirac antisymmetry",
+        "Hodge flow decomposition"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/four_party_energy_network_v49.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "FourPartyEnergyNetwork",
+        "_minimum_cut",
+        "cut_masks",
+        "inventory",
+        "infrastructure",
+        "bottleneck_cut_frequency",
+        "SOURCE_URLS",
+        "_hodge_metrics",
+        "max_port_hamiltonian_residual",
+        "graph_resilience"
+      ],
+      "state_owner": "FourPartyEnergyNetwork inventory/infrastructure/cut state",
+      "clock": "monthly; lagged energy availability consumed before current damage and repair update",
+      "pathwise": true,
+      "inputs": [
+        "damage",
+        "output",
+        "mobilization",
+        "finance",
+        "trade loss",
+        "blockade",
+        "sanction relief",
+        "alliance intervention"
+      ],
+      "outputs": [
+        "carrier availability",
+        "production/logistics/civilian factors",
+        "energy shortage",
+        "inflation impulse",
+        "minimum cut and bottleneck"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "labor_firms_supply_collapse",
+        "finance_fiscal_money_tax_debt_assets",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "open_dsge_hank_mundell_fleming"
+      ],
+      "solver": "batched exact enumeration of all 16 cuts for each carrier and path, followed by capacity-feasible priority allocation",
+      "convergence_criterion": "max-flow/min-cut and delivery feasibility residuals below 1e-9",
+      "data": [
+        {
+          "source": "EIA country analyses and Taiwan MOEA energy statistics; URLs embedded in SOURCE_URLS",
+          "publisher": "U.S. EIA and Taiwan energy authority",
+          "observation_date": "accessed 2026-10-05",
+          "unit": "normalized domestic/import capacity shares",
+          "identification": "scenario_prior",
+          "identification_note": "public structural anchor plus documented wartime scenario priors"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "max flow equals minimum cut",
+        "delivery does not exceed demand",
+        "bounded inventory and infrastructure",
+        "Hodge divergence, Dirac and storage residuals below tolerance"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "geometric_multiscale_coupling",
+      "document_sections": [
+        "geometry 19",
+        "geometry 23",
+        "geometry 26"
+      ],
+      "equations": [
+        "fast-slow manifold decomposition",
+        "geometric-mean reconstruction",
+        "cross-scale consistency penalty"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/geometric_multiscale_v50.py",
+        "work/simulate_taiwan_multidomain_v42.py"
+      ],
+      "symbols": [
+        "GeometricMultiscaleCoupler",
+        "slow_state",
+        "combat_factor",
+        "macro_logistics_factor",
+        "aggregation_residual"
+      ],
+      "state_owner": "GeometricMultiscaleCoupler.slow_state",
+      "clock": "monthly same-path after opening states and before combat/macro closing updates",
+      "pathwise": true,
+      "inputs": [
+        "front/transit/depth integrity",
+        "sector output",
+        "financial capacity",
+        "command",
+        "energy logistics"
+      ],
+      "outputs": [
+        "combat consistency factor",
+        "macro logistics factor",
+        "fast/slow components"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips"
+      ],
+      "solver": "explicit slow-manifold update and exact multiplicative reconstruction",
+      "convergence_criterion": "aggregation residual below 1e-12",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "same-path reconstruction",
+        "bounded positive consistency factors"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v50.py",
+        "outputs/taiwan_v50_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_geometry_simulation.json"
+    },
+    {
+      "module_id": "lie_group_and_symplectic_fast_mechanics",
+      "document_sections": [
+        "geometry 4",
+        "geometry 7"
+      ],
+      "equations": [],
+      "role": "theory_only",
+      "status": "theory_only",
+      "implementation_status": "PASS",
+      "implementation": [
+        "outputs/台海模型中的微分几何_辛几何_黎曼几何与哈密顿系统_飞书LaTeX.md"
+      ],
+      "symbols": [],
+      "state_owner": "none",
+      "clock": "none",
+      "pathwise": false,
+      "inputs": [],
+      "outputs": [],
+      "feedback_consumers": [],
+      "solver": "none",
+      "convergence_criterion": "No aggregate state has an identified rigid-body or conservative phase-space contract; local six-DOF models remain outside the active macro solver.",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "excluded from active probability path"
+      ],
+      "tests": [
+        "outputs/taiwan_v50_traceability.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_traceability.json"
+    },
+    {
+      "module_id": "contact_and_metriplectic_irreversibility",
+      "document_sections": [
+        "geometry 10"
+      ],
+      "equations": [],
+      "role": "theory_only",
+      "status": "theory_only",
+      "implementation_status": "PASS",
+      "implementation": [
+        "outputs/台海模型中的微分几何_辛几何_黎曼几何与哈密顿系统_飞书LaTeX.md"
+      ],
+      "symbols": [],
+      "state_owner": "none",
+      "clock": "none",
+      "pathwise": false,
+      "inputs": [],
+      "outputs": [],
+      "feedback_consumers": [],
+      "solver": "none",
+      "convergence_criterion": "Dissipation is currently represented by explicit stock losses and port-Hamiltonian R terms; no independently identified contact variable is available.",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "excluded from active probability path"
+      ],
+      "tests": [
+        "outputs/taiwan_v50_traceability.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_traceability.json"
+    },
+    {
+      "module_id": "tda_persistent_homology_candidate",
+      "document_sections": [
+        "geometry 18",
+        "geometry 26.1"
+      ],
+      "equations": [],
+      "role": "theory_only",
+      "status": "theory_only",
+      "implementation_status": "PASS",
+      "implementation": [
+        "outputs/台海模型中的微分几何_辛几何_黎曼几何与哈密顿系统_飞书LaTeX.md"
+      ],
+      "symbols": [],
+      "state_owner": "none",
+      "clock": "none",
+      "pathwise": false,
+      "inputs": [],
+      "outputs": [],
+      "feedback_consumers": [],
+      "solver": "none",
+      "convergence_criterion": "Conditional candidate only; activation requires rolling out-of-sample and permutation-test improvement.",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "excluded from active probability path"
+      ],
+      "tests": [
+        "outputs/taiwan_v50_traceability.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_traceability.json"
+    },
+    {
+      "module_id": "kahler_geometry_not_adopted",
+      "document_sections": [
+        "geometry 20.1"
+      ],
+      "equations": [],
+      "role": "theory_only",
+      "status": "theory_only",
+      "implementation_status": "PASS",
+      "implementation": [
+        "outputs/台海模型中的微分几何_辛几何_黎曼几何与哈密顿系统_飞书LaTeX.md"
+      ],
+      "symbols": [],
+      "state_owner": "none",
+      "clock": "none",
+      "pathwise": false,
+      "inputs": [],
+      "outputs": [],
+      "feedback_consumers": [],
+      "solver": "none",
+      "convergence_criterion": "No natural complex structure or testable Kähler constraint exists in the current state space.",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "excluded from active probability path"
+      ],
+      "tests": [
+        "outputs/taiwan_v50_traceability.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_traceability.json"
+    },
+    {
+      "module_id": "category_theory_interface_language",
+      "document_sections": [
+        "geometry 20.2"
+      ],
+      "equations": [],
+      "role": "theory_only",
+      "status": "theory_only",
+      "implementation_status": "PASS",
+      "implementation": [
+        "outputs/台海模型中的微分几何_辛几何_黎曼几何与哈密顿系统_飞书LaTeX.md"
+      ],
+      "symbols": [],
+      "state_owner": "none",
+      "clock": "none",
+      "pathwise": false,
+      "inputs": [],
+      "outputs": [],
+      "feedback_consumers": [],
+      "solver": "none",
+      "convergence_criterion": "Used only as typed-interface audit language and does not generate dynamics or probabilities.",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/E3SDdy2reoTeVjxiiZhcszw8nve",
+          "publisher": "Taiwan model geometry-method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map; public-data inputs inherited from owning module",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "excluded from active probability path"
+      ],
+      "tests": [
+        "outputs/taiwan_v50_traceability.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v50_traceability.json"
+    },
+    {
+      "module_id": "hybrid_filippov_impulse",
+      "document_sections": [
+        "31",
+        "31.1",
+        "31.2",
+        "31.3"
+      ],
+      "equations": [
+        "Filippov differential inclusion",
+        "convex sliding vector field",
+        "hysteretic switching with minimum dwell",
+        "marked impulse reset map",
+        "same-path event ledger"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/hybrid_filippov_impulse_v51.py",
+        "work/simulate_taiwan_multidomain_v42.py",
+        "work/simulate_taiwan_fully_closed_v47.py",
+        "work/simulate_taiwan_fully_closed_v51.py"
+      ],
+      "symbols": [
+        "HybridFilippovImpulseSystem",
+        "update_filippov",
+        "apply_damage_reset",
+        "apply_leader_reset",
+        "apply_coup_reset",
+        "apply_collapse_reset",
+        "minimum_dwell",
+        "max_sliding_residual",
+        "max_reset_residual",
+        "stress_min",
+        "stress_max",
+        "new_event"
+      ],
+      "state_owner": "HybridFilippovImpulseSystem.regime/dwell/event ledger",
+      "clock": "monthly same-path, with unique marked resets inside each campaign month",
+      "pathwise": true,
+      "inputs": [
+        "logistics service",
+        "financial capacity and debt stress",
+        "stock shortage",
+        "support and conflict intensity",
+        "command service",
+        "existing Hawkes/DEDS event masks"
+      ],
+      "outputs": [
+        "logistics/financial/mobilization/command switching factors",
+        "leader/damage/coup/collapse reset state",
+        "event ledger diagnostics"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "open_economy_dsge_hank",
+        "continuous_graphon_mfg"
+      ],
+      "solver": "explicit hysteretic Filippov convexification plus exact marked reset maps",
+      "convergence_criterion": "sliding normal residual <1e-12, reset residual <1e-12, no duplicate event",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+          "publisher": "Taiwan model research specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural scenario prior",
+          "identification": "scenario_prior",
+          "uncertainty": "threshold and reset-strength structural sensitivity required"
+        }
+      ],
+      "invariants": [
+        "unique event settlement",
+        "minimum dwell",
+        "bounded convex weight",
+        "zero normal velocity on a sliding surface",
+        "bounded reset state"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v51.py",
+        "work/run_taiwan_v51_sensitivity.py",
+        "outputs/taiwan_v51_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v51_hybrid_simulation.json"
+    },
+    {
+      "module_id": "symbolic_topological_dynamics",
+      "document_sections": [
+        "31.4",
+        "topology 5.1-5.6",
+        "topology 7-9"
+      ],
+      "equations": [
+        "16-cell symbolic partition",
+        "pathwise transition counting",
+        "recurrence-novelty-Hamming instability",
+        "Morse SCC decomposition",
+        "adjacency spectral-radius entropy proxy"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/topological_dynamics_v51.py",
+        "work/simulate_taiwan_multidomain_v42.py",
+        "work/simulate_taiwan_fully_closed_v47.py"
+      ],
+      "symbols": [
+        "TopologicalRegimeDynamics",
+        "transition_counts",
+        "visit_counts",
+        "_strongly_connected_components",
+        "morse_sets",
+        "topological_entropy_upper_proxy",
+        "max_feedback_deviation"
+      ],
+      "state_owner": "TopologicalRegimeDynamics.transition_counts/visit_counts",
+      "clock": "monthly same-path after Filippov switching and before physical/economic updates",
+      "pathwise": true,
+      "inputs": [
+        "four Filippov regimes",
+        "conflict regime",
+        "four-domain collapse state"
+      ],
+      "outputs": [
+        "symbol",
+        "recurrence",
+        "topological instability",
+        "bounded command/financial/logistics/mobilization/panic feedback",
+        "Morse graph diagnostics"
+      ],
+      "feedback_consumers": [
+        "campaign_deds_multidomain",
+        "dynamic_mr_cge_mrio_gravity_chips",
+        "open_economy_dsge_hank",
+        "age_stratified_social_contagion"
+      ],
+      "solver": "finite symbolic transition graph, Tarjan SCC and adjacency spectral radius",
+      "convergence_criterion": "exact transition accounting, bounded nonzero feedback, finite entropy proxy",
+      "data": [
+        {
+          "source": "https://my.feishu.cn/docx/U0Zydx0uSoxaxZxutUKc6lbDnBe",
+          "publisher": "Taiwan hybrid/topological dynamics method specification",
+          "observation_date": "2026-10-06",
+          "unit": "dimensionless structural map",
+          "identification": "scenario_prior",
+          "uncertainty": "symbol partition and feedback-strength sensitivity"
+        }
+      ],
+      "invariants": [
+        "symbols in 0..15",
+        "path isolation",
+        "exact transition count",
+        "bounded feedback",
+        "finite Morse graph and entropy proxy"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v51.py",
+        "outputs/taiwan_v51_static_coupling_audit.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v51_hybrid_simulation.json"
+    },
+    {
+      "module_id": "jorgenson_parameter_interface_v53",
+      "document_sections": [
+        "14.4",
+        "14.8",
+        "14.9"
+      ],
+      "role": "estimator",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py"
+      ],
+      "symbols": [
+        "JorgensonParameterEstimator",
+        "JorgensonParameters",
+        "fit"
+      ],
+      "state_owner": "immutable JorgensonParameters",
+      "clock": "initialization",
+      "pathwise": false,
+      "inputs": [
+        "public IO intermediate shares",
+        "public value-added shares"
+      ],
+      "outputs": [
+        "adding-up-consistent factor shares",
+        "price adjustment prior",
+        "inventory target"
+      ],
+      "feedback_consumers": [
+        "mr_rd_cge_dq_v53",
+        "msg_capital_labor_v53"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "factor shares sum to one",
+        "no wartime parameter labelled observed"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "mr_rd_cge_dq_v53",
+      "document_sections": [
+        "5.1",
+        "5.2",
+        "6",
+        "6.1",
+        "6.2",
+        "6.5",
+        "6.6",
+        "14.7",
+        "14.8"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py",
+        "work/dynamic_macro_equilibrium_v47.py"
+      ],
+      "symbols": [
+        "MRRDCGEDQSFCState",
+        "CoupledMRRDCGEDQSFCEconomicSystem",
+        "actual_transactions"
+      ],
+      "state_owner": "MRRDCGEDQSFCState owns 140-node inventory, backlog, transactions and contract prices",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "same-path CGE production plan",
+        "same-path demand and capacity",
+        "war and finance states"
+      ],
+      "outputs": [
+        "realized transactions",
+        "fulfilment",
+        "contract inflation",
+        "lagged CGE feedback"
+      ],
+      "feedback_consumers": [
+        "dynamic_multi_regional_cge",
+        "open_economy_dsge",
+        "campaign_deds_multidomain"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "material stock-flow conservation",
+        "nonnegative inventory and backlog",
+        "declared one-month feedback lag"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "msg_capital_labor_v53",
+      "document_sections": [
+        "3.1",
+        "3.2",
+        "6.3",
+        "14.1",
+        "14.8"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py"
+      ],
+      "symbols": [
+        "old_capital",
+        "new_capital",
+        "construction_queue",
+        "unemployment",
+        "vacancies"
+      ],
+      "state_owner": "MRRDCGEDQSFCState owns vintages, construction queue and search stocks",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "actual output",
+        "financial stress",
+        "damage",
+        "vacancies and unemployment"
+      ],
+      "outputs": [
+        "installed vintage capital",
+        "employment",
+        "matching flow"
+      ],
+      "feedback_consumers": [
+        "dynamic_multi_regional_cge",
+        "labor_skill_mobilization"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "construction queue conservation",
+        "bounded employment",
+        "capital nonnegative"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "nonfinancial_sfc_v53",
+      "document_sections": [
+        "5.3",
+        "6.4",
+        "8",
+        "14.7",
+        "14.8"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py",
+        "work/simulate_four_party_financial_v45.py"
+      ],
+      "symbols": [
+        "settlement_position",
+        "ACCOUNT_NAMES",
+        "_transfer"
+      ],
+      "state_owner": "MRRDCGEDQSFCState owns clearing positions; FourPartyFinancialSystem owns bank capital, debt and reserves",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "realized sales",
+        "wages",
+        "taxes",
+        "trade balance",
+        "working-capital demand"
+      ],
+      "outputs": [
+        "five-account clearing positions",
+        "settlement feedback"
+      ],
+      "feedback_consumers": [
+        "wartime_inflation_finance",
+        "mr_rd_cge_dq_v53"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "every transaction has equal debit and credit",
+        "no duplicate bank or sovereign stock owner"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "four_party_social_accounting_matrix_v53",
+      "document_sections": [
+        "5.3",
+        "6.4",
+        "8",
+        "14.5",
+        "14.7",
+        "14.8"
+      ],
+      "role": "dynamic_state",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/social_accounting_matrix_v53.py",
+        "work/dynamic_macro_dqsfc_v53.py"
+      ],
+      "symbols": [
+        "FourPartySocialAccountingMatrix",
+        "SAM_ACCOUNTS",
+        "benchmark",
+        "transactions"
+      ],
+      "state_owner": "FourPartySocialAccountingMatrix owns SAM transactions and institutional income distribution",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "public IO transactions",
+        "value added",
+        "final demand",
+        "realized monthly transactions"
+      ],
+      "outputs": [
+        "balanced 19-account benchmark",
+        "household income",
+        "institutional saving",
+        "monthly SAM"
+      ],
+      "feedback_consumers": [
+        "nonfinancial_sfc_v53",
+        "mr_rd_cge_dq_v53",
+        "reporting"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "benchmark row-column balance",
+        "monthly account balance",
+        "saving-investment closure",
+        "nonnegative flows"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "age_activity_complementarity_v53",
+      "document_sections": [
+        "10",
+        "14.3",
+        "14.6",
+        "14.8"
+      ],
+      "role": "constraint_solver",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py",
+        "work/dynamic_macro_equilibrium_v47.py"
+      ],
+      "symbols": [
+        "max_age_complementarity_residual",
+        "shadow_price",
+        "last_capacity"
+      ],
+      "state_owner": "DynamicMultiRegionalCGE owns activity shadow prices",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "capacity",
+        "production",
+        "scarcity rent"
+      ],
+      "outputs": [
+        "activity complementarity residual",
+        "capacity shadow price"
+      ],
+      "feedback_consumers": [
+        "mr_rd_cge_dq_v53"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        }
+      ],
+      "invariants": [
+        "nonnegative activity",
+        "scarcity rent complementary to unused capacity"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    },
+    {
+      "module_id": "hssw_welfare_v53",
+      "document_sections": [
+        "3.4",
+        "14.2",
+        "14.8"
+      ],
+      "role": "terminal_model",
+      "status": "active",
+      "implementation_status": "PASS",
+      "implementation": [
+        "work/dynamic_macro_dqsfc_v53.py"
+      ],
+      "symbols": [
+        "equivalent_variation",
+        "cumulative_ev",
+        "max_hssw_identity_residual"
+      ],
+      "state_owner": "MRRDCGEDQSFCState owns welfare accumulator only",
+      "clock": "monthly same-path",
+      "pathwise": true,
+      "inputs": [
+        "realized consumption",
+        "contract price index",
+        "baseline expenditure"
+      ],
+      "outputs": [
+        "equivalent variation",
+        "cumulative welfare decomposition"
+      ],
+      "feedback_consumers": [
+        "reporting"
+      ],
+      "solver": "bounded vectorized fixed point or closed-form accounting transition",
+      "convergence_criterion": "documented residual gate in taiwan_v53_diagnostic_only.json",
+      "data": [
+        {
+          "source": "data/oecd_icio_2025/icio_2022_8x10.npz",
+          "publisher": "OECD ICIO 2022, locally aggregated",
+          "observation_date": "2022",
+          "unit": "current-price input-output and value-added flows",
+          "identification": "derived"
+        },
+        {
+          "source": "data/china_mrio/MRIO2017_42+CEADS.xlsx",
+          "publisher": "CEADS China MRIO",
+          "observation_date": "2017",
+          "unit": "province-industry input-output flows",
+          "identification": "observed"
+        },
+        {
+          "source": "https://my.feishu.cn/docx/VqnJdDTrIoMrPyxOX7fcBvyande",
+          "publisher": "DRCCGE and disequilibrium CGE research specification",
+          "observation_date": "2026-10-07",
+          "unit": "bounded structural coefficient",
+          "identification": "scenario_prior"
+        }
+      ],
+      "invariants": [
+        "expenditure identity",
+        "welfare does not feed battlefield dynamics"
+      ],
+      "tests": [
+        "work/diagnostic_taiwan_v53.py",
+        "outputs/taiwan_v53_diagnostic_only.json"
+      ],
+      "outputs_artifact": "outputs/taiwan_v53_diagnostic_only.json"
+    }
+  ],
+  "blocking_gaps": []
+}

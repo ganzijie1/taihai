@@ -1,0 +1,36 @@
+{
+  "model_version": "V5.3",
+  "status": "PASS",
+  "master_clock": "monthly same-path; DQ-SFC outputs feed the next CGE month explicitly",
+  "required_edges": [
+    {
+      "edge": "CGE planned demand/capacity -> DQ actual transactions",
+      "status": "PASS"
+    },
+    {
+      "edge": "DQ fulfilment -> next-month CGE logistics",
+      "status": "PASS"
+    },
+    {
+      "edge": "search employment -> next-month CGE labor",
+      "status": "PASS"
+    },
+    {
+      "edge": "SFC settlement -> next-month payment integrity",
+      "status": "PASS"
+    },
+    {
+      "edge": "realized production/income/trade -> balanced four-party SAM",
+      "status": "PASS"
+    },
+    {
+      "edge": "vintage completion -> CGE capital",
+      "status": "PASS"
+    }
+  ],
+  "duplicate_state_owners": [],
+  "mandatory_solver_inheritance": "V5.2 PASS",
+  "new_diagnostic_status": "PASS",
+  "blocking_gaps": [],
+  "simulation_authorized": true
+}

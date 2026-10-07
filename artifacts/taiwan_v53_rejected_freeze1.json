@@ -1,0 +1,15 @@
+{
+  "model_version": "V5.3-pre-SAM",
+  "status": "REJECTED",
+  "rejected_at": "2026-10-07 Asia/Shanghai",
+  "obsolete_freeze_sha256": "DE3CD96D79C6E737A18D1D236BC775FC4B558DE0747D5A08314B7CA2D8D370EB",
+  "reason": "The full social accounting matrix was absent. The run was terminated before result serialization and no substantive outcome was published.",
+  "replacement_requirements": [
+    "four-party 19-account benchmark SAM",
+    "monthly same-path SAM transaction update",
+    "benchmark row-column balance",
+    "dynamic account balance",
+    "saving-investment closure",
+    "manifest and coupling audit"
+  ]
+}

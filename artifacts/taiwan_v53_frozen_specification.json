@@ -1,0 +1,34 @@
+{
+  "model_version": "V5.3",
+  "status": "FROZEN",
+  "frozen_at": "2026-10-07 Asia/Shanghai",
+  "simulation_contract": {
+    "paths": 128,
+    "months": 360,
+    "master_clock": "monthly same-path",
+    "economic_feedback_lag": "one explicit month",
+    "all_trade_scenarios": true,
+    "all_intervention_cases": true,
+    "base_seed_owner": "simulate_taiwan_multidomain_v42.SEED"
+  },
+  "identification_boundary": {
+    "public_IO_accounts": "observed/derived",
+    "sam_household_groups_and_institutional_allocation": "structural_prior_balanced_to_observed_control_totals",
+    "wartime_price_search_cancellation_parameters": "scenario_prior",
+    "no_classified_precision_claimed": true
+  },
+  "files": {
+    "work\\dynamic_macro_equilibrium_v47.py": "84F996D311A6C4B50A70B3089929DA3299732904379EFBFD2D328E41B7E5BF66",
+    "work\\dynamic_macro_dqsfc_v53.py": "D963D2809C3D673A062CB91F13D0CD53416A77E145A42D9F40B61E00B41D0A98",
+    "work\\social_accounting_matrix_v53.py": "BF31B30E90820F53AE8A2AA7139B98F79900126BEB4BD8D4461A43BE840A461C",
+    "work\\simulate_taiwan_fully_closed_v47.py": "A79C677690883934BBDBD70254B562E9B16292782662C72DA97512D0F6CB9347",
+    "work\\simulate_taiwan_fully_closed_v53.py": "91472FA72799E10FE0505F3AADBD74CBB0CF8082F486E13598892621E117381C",
+    "work\\simulate_four_party_financial_v45.py": "5BCCE9E47B33CC2CE8446F9322922FEA7458E96699FCEB9B5657C09AC0E9D925",
+    "outputs\\DRCCGE与非均衡CGE升级调研_飞书LaTeX.md": "217C8C80F70B14DFDB92782892E67B2B1DF6D18AC4FEE54935418AC9CBAAC95B",
+    "outputs\\taiwan_v53_traceability.json": "7D1D8A477C63960D70D301B51B0E8BAD580DE464AB86E29FE7CC3790E5F6516C",
+    "outputs\\taiwan_v53_static_coupling_audit.json": "E79FA063EC0A5CE7CEE4BB8B2B2F9D26C3B9695621AA2D179AE9EE28F4036332",
+    "outputs\\taiwan_v53_diagnostic_only.json": "AE5DCCE7E2A08090C0ED3B9E926D050CAE4493EBF40CCB82F2255E53BC73A2E3",
+    "data\\oecd_icio_2025\\icio_2022_8x10.npz": "8DE878B184D56FA653BF2F530BA79E8B6E10EDEDE696AF168D3CE78C810838B1",
+    "data\\china_mrio\\dual_circulation_2022_140nodes.npz": "4FD8429A8B6ED5D935C03182D8935BEABB6A6955FF0CC48BFFCE3BC046D84623"
+  }
+}
