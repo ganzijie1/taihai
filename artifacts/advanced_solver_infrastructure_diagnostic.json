@@ -1,0 +1,79 @@
+{
+  "scope": "DIAGNOSTIC_ONLY; no scenarios, probabilities, casualties, or rankings",
+  "infrastructure": {
+    "jax_available": true,
+    "torch_available": true,
+    "jax_devices": [
+      "TFRT_CPU_0"
+    ],
+    "jax_platforms": [
+      "cpu"
+    ],
+    "torch_version": "2.6.0+cu124",
+    "torch_cuda_build": "12.4",
+    "torch_cuda_available": true,
+    "torch_cuda_devices": [
+      "NVIDIA GeForce RTX 3060"
+    ]
+  },
+  "torch_cuda_residency": {
+    "backend": "torch",
+    "platform": "cuda",
+    "device": "cuda:0",
+    "device_name": "NVIDIA GeForce RTX 3060",
+    "resident_buffers": 1,
+    "host_transfer_count": 0,
+    "memory_allocated_bytes": 32768,
+    "memory_reserved_bytes": 2097152,
+    "torch_version": "2.6.0+cu124",
+    "cuda_version": "12.4",
+    "pointer_stable": true,
+    "explicit_host_transfers_after_readback": 1
+  },
+  "jax_newton_jvp": {
+    "runtime": {
+      "backend": "jax",
+      "platform": "cpu",
+      "device": "TFRT_CPU_0",
+      "resident_buffers": 2,
+      "compiled_kernels": 1,
+      "host_transfer_count": 1,
+      "x64_enabled": true
+    },
+    "iterations": 5,
+    "krylov_iterations": 8,
+    "residual": 6.711082016568416e-12,
+    "max_error": 3.355538069627073e-12,
+    "converged": true
+  },
+  "geometric_multigrid": {
+    "points": 25,
+    "paths": 3,
+    "cycles": 8,
+    "initial_residual": 5.0,
+    "final_residual": 0.08542009208602698,
+    "contraction": 0.017084018417205395
+  },
+  "zero_shock_cge_dsge": {
+    "scope": "zero-shock numerical fixture; economic levels intentionally omitted",
+    "cge_backend": "newton_krylov",
+    "dsge_backend": "jvp_newton_krylov",
+    "cge_newton": {
+      "iterations": 1,
+      "residual": 9.959205704689357e-05,
+      "converged": true,
+      "krylov_iterations": 3,
+      "line_search_reductions": 0
+    },
+    "dsge_newton": {
+      "iterations": 1,
+      "residual": 3.158382533513792e-05,
+      "converged": true,
+      "krylov_iterations": 6,
+      "line_search_reductions": 0
+    },
+    "external_account_residual": 4.372337508708238e-19,
+    "outer_residual": 0.0010828082929901228,
+    "outer_iterations": 4
+  }
+}

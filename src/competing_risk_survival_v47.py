@@ -25,10 +25,20 @@ class SurvivalFactors:
 class StratifiedCompetingRiskSurvival:
     """Monthly stratified Cox risks, Fine-Gray CIFs, and an AFT delay model."""
 
-    def __init__(self, paths: int, seed: int):
+    def __init__(
+        self, paths: int, seed: int,
+        econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
         self.paths = paths
         self.rng = np.random.default_rng(seed)
         self.last_result: SurvivalFactors | None = None
+        draws = econometric_draws or {}
+        self.beta_scales = {
+            cause: np.asarray(draws.get(f"{cause}_beta_scale", np.ones(paths)), dtype=float)
+            for cause in CAUSES
+        }
+        if any(value.shape != (paths,) for value in self.beta_scales.values()):
+            raise ValueError("competing-risk beta draws must have shape (paths,)")
 
     @staticmethod
     def _integrate(hazards: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -91,21 +101,22 @@ class StratifiedCompetingRiskSurvival:
         separation_stratum = np.array([0.92, 1.16, 0.84, 1.04])[strata]
 
         x_force = (
-            1.10 * (support[:, 0] - 0.50)
+            self.beta_scales["force"] * (1.10 * (support[:, 0] - 0.50)
             + 0.58 * (0.58 - support[:, 1])
             - 0.66 * (support[:, 2] - 0.42)
             + 0.42 * (1.0 - continuity[:, 0])
             - 0.44 * np.log(readiness)
-            + 0.30 * stress[:, 0] - 0.24 * fiscal[:, 0] + 0.38 * pressure
+            + 0.30 * stress[:, 0] - 0.24 * fiscal[:, 0] + 0.38 * pressure)
         )
         x_peace = (
-            0.74 * (support[:, 0] - 0.50) + 0.82 * (support[:, 1] - 0.50)
+            self.beta_scales["peace"] * (0.74 * (support[:, 0] - 0.50) + 0.82 * (support[:, 1] - 0.50)
             + 0.40 * (support[:, 2] - 0.42) + 0.28 * readiness
-            - 0.34 * stress[:, 0] - 0.16 * pressure
+            - 0.34 * stress[:, 0] - 0.16 * pressure)
         )
         x_separation = (
-            0.92 * (0.58 - support[:, 1]) + 0.48 * (support[:, 2] - 0.42)
+            self.beta_scales["separation"] * (0.92 * (0.58 - support[:, 1]) + 0.48 * (support[:, 2] - 0.42)
             + 0.35 * readiness + 0.22 * fiscal[:, 1] + 0.12 * pressure
+            )
         )
         t = np.arange(months, dtype=float)[None, :]
         time_force = 0.78 + 0.44 * (t / max(months - 1, 1)) ** 1.35
@@ -206,23 +217,23 @@ class StratifiedCompetingRiskSurvival:
         peace_stratum = np.take(np.array([1.10, 0.92, 0.88, 0.72]), strata)
         separation_stratum = np.take(np.array([0.92, 1.16, 0.84, 1.04]), strata)
         x_force = (
-            1.10 * (support[:, :, 0] - 0.50)
+            self.beta_scales["force"][None, :] * (1.10 * (support[:, :, 0] - 0.50)
             + 0.58 * (0.58 - support[:, :, 1])
             - 0.66 * (support[:, :, 2] - 0.42)
             + 0.42 * (1.0 - continuity[:, :, 0])
             - 0.44 * np.log(readiness)
             + 0.30 * stress[:, :, 0] - 0.24 * fiscal[:, :, 0] + 0.38 * pressure
-            - 0.24 * (linkage - 1.0)
+            - 0.24 * (linkage - 1.0))
         )
         x_peace = (
-            0.74 * (support[:, :, 0] - 0.50) + 0.82 * (support[:, :, 1] - 0.50)
+            self.beta_scales["peace"][None, :] * (0.74 * (support[:, :, 0] - 0.50) + 0.82 * (support[:, :, 1] - 0.50)
             + 0.40 * (support[:, :, 2] - 0.42) + 0.28 * readiness
-            - 0.34 * stress[:, :, 0] - 0.16 * pressure + 0.30 * (linkage - 1.0)
+            - 0.34 * stress[:, :, 0] - 0.16 * pressure + 0.30 * (linkage - 1.0))
         )
         x_separation = (
-            0.92 * (0.58 - support[:, :, 1]) + 0.48 * (support[:, :, 2] - 0.42)
+            self.beta_scales["separation"][None, :] * (0.92 * (0.58 - support[:, :, 1]) + 0.48 * (support[:, :, 2] - 0.42)
             + 0.35 * readiness + 0.22 * fiscal[:, :, 1] + 0.12 * pressure
-            - 0.10 * (linkage - 1.0)
+            - 0.10 * (linkage - 1.0))
         )
         elapsed = np.arange(months, dtype=float)[:, None] / max(months - 1, 1)
         time_force = 0.78 + 0.44 * elapsed ** 1.35
@@ -276,6 +287,11 @@ class StratifiedCompetingRiskSurvival:
             "force_calibration_residual": result.calibration_residual,
             "minimum_cause_specific_hazard": float(np.min(result.cause_specific_hazard)),
             "minimum_fine_gray_hazard": float(np.min(result.fine_gray_hazard)),
+            "beta_scale_ranges": {
+                cause: [float(np.min(value)), float(np.max(value))]
+                for cause, value in self.beta_scales.items()
+            },
+            "beta_identification": "scenario_prior_uncertainty; terminal outcomes absent from calibration sample",
             "aft_delay_p10_p50_p90": [
                 float(x) for x in np.quantile(result.aft_delay_months, (0.1, 0.5, 0.9))
             ],

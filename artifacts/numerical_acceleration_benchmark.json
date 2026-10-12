@@ -1,0 +1,181 @@
+{
+  "scope": "DIAGNOSTIC_ONLY",
+  "platform": "Windows-10-10.0.19045-SP0",
+  "python": "3.10.11",
+  "numpy": "1.26.4",
+  "numba_available": true,
+  "timing_note": "wall clock; compile time separated; no outcome simulation",
+  "tridiagonal": {
+    "systems": 2048,
+    "grid_points": 25,
+    "numpy": {
+      "median_seconds": 0.0013951500004623085,
+      "minimum_seconds": 0.001362999995762948,
+      "maximum_seconds": 0.0019676000010804273,
+      "repeats": 40
+    },
+    "numba": {
+      "median_seconds": 7.139999797800556e-05,
+      "minimum_seconds": 6.969999958528206e-05,
+      "maximum_seconds": 0.00018000000272877514,
+      "repeats": 40
+    },
+    "numba_compile_and_first_seconds": 0.2450914999935776,
+    "hot_speedup_median": 19.539916526217244,
+    "backend_max_absolute_gap": 0.0
+  },
+  "mfg_one_month_neutral_fixture": {
+    "paths": 128,
+    "numpy": {
+      "median_seconds": 0.20668980000482406,
+      "minimum_seconds": 0.2029846000004909,
+      "maximum_seconds": 0.6679825999963214,
+      "repeats": 5
+    },
+    "numba": {
+      "median_seconds": 0.08524770000076387,
+      "minimum_seconds": 0.07497149999835528,
+      "maximum_seconds": 0.08814169999823207,
+      "repeats": 5
+    },
+    "hot_speedup_median": 2.42457919689296,
+    "density_max_absolute_gap": 1.3322676295501878e-15,
+    "support_max_absolute_gap": 0.0,
+    "fixed_point_iterations": {
+      "numpy": 5,
+      "numba": 5
+    }
+  },
+  "fp_cuda_transfer_fusion": {
+    "available": true,
+    "backend": "torch_fvm_cuda",
+    "separate": {
+      "median_seconds": 0.0119294500000251,
+      "minimum_seconds": 0.011644899997918401,
+      "maximum_seconds": 0.01244320000114385,
+      "repeats": 20
+    },
+    "fused": {
+      "median_seconds": 0.011038700002245605,
+      "minimum_seconds": 0.010894900005951058,
+      "maximum_seconds": 0.01259330000175396,
+      "repeats": 20
+    },
+    "hot_speedup_median": 1.0806933785317374,
+    "max_absolute_gap": 0.0,
+    "separate_transfers": {
+      "host_to_device": 3,
+      "device_to_host": 3
+    },
+    "fused_transfers": {
+      "host_to_device": 1,
+      "device_to_host": 1
+    }
+  },
+  "rolling_differential_game": {
+    "paths": 128,
+    "candidates": 8,
+    "scalar_candidates": {
+      "median_seconds": 0.005602749999525258,
+      "minimum_seconds": 0.00541259999590693,
+      "maximum_seconds": 0.005887599996640347,
+      "repeats": 80
+    },
+    "vectorized_candidate_axis": {
+      "median_seconds": 0.0020859500000369735,
+      "minimum_seconds": 0.002065000000584405,
+      "maximum_seconds": 0.0025107000037678517,
+      "repeats": 80
+    },
+    "hot_speedup_median": 2.6859464509820223,
+    "max_absolute_gap": 0.0
+  },
+  "macro_native_windows": {
+    "paths": 64,
+    "cases": {
+      "neutral": {
+        "picard_seconds": 0.046104499997454695,
+        "native_windows_seconds": 0.01457279999885941,
+        "speedup": 3.163736550358423,
+        "max_state_gap": 0.0,
+        "picard_converged": true,
+        "native_windows_converged": true,
+        "picard_residuals": {
+          "outer": 0.0012928362416906314,
+          "cge_goods": 0.0,
+          "cge_factor": 0.0,
+          "dsge": 0.0007633358300453558
+        },
+        "native_windows_residuals": {
+          "outer": 0.0012928362416906314,
+          "cge_goods": 0.0,
+          "cge_factor": 0.0,
+          "dsge": 0.0007633358300453558
+        },
+        "backends": {
+          "cge": "picard",
+          "dsge": "numba_picard"
+        }
+      },
+      "stressed": {
+        "picard_seconds": 0.3166120999958366,
+        "native_windows_seconds": 0.17695670000102837,
+        "speedup": 1.7892066250896217,
+        "max_state_gap": 0.0,
+        "picard_converged": true,
+        "native_windows_converged": true,
+        "picard_residuals": {
+          "outer": 0.001905955259675074,
+          "cge_goods": 0.0005887673093049051,
+          "cge_factor": 0.00021761203946668584,
+          "dsge": 0.0007994953439561803
+        },
+        "native_windows_residuals": {
+          "outer": 0.001905955259675074,
+          "cge_goods": 0.0005887673093049051,
+          "cge_factor": 0.00021761203946668584,
+          "dsge": 0.0007994953439561803
+        },
+        "backends": {
+          "cge": "picard",
+          "dsge": "numba_picard"
+        }
+      }
+    }
+  },
+  "ode_sde_path_batching": {
+    "paths": 4096,
+    "rk4": {
+      "scalar": {
+        "median_seconds": 0.05278080000425689,
+        "minimum_seconds": 0.05125170000246726,
+        "maximum_seconds": 0.05337580000195885,
+        "repeats": 3
+      },
+      "vectorized": {
+        "median_seconds": 8.750000415602699e-05,
+        "minimum_seconds": 8.710000111022964e-05,
+        "maximum_seconds": 0.00012540000170702115,
+        "repeats": 30
+      },
+      "speedup": 603.2091142548975,
+      "max_absolute_gap": 0.0
+    },
+    "euler_maruyama": {
+      "scalar": {
+        "median_seconds": 0.029827999998815358,
+        "minimum_seconds": 0.02912320000177715,
+        "maximum_seconds": 0.029904299997724593,
+        "repeats": 3
+      },
+      "vectorized": {
+        "median_seconds": 3.960000321967527e-05,
+        "minimum_seconds": 3.930000093532726e-05,
+        "maximum_seconds": 8.099999831756577e-05,
+        "repeats": 30
+      },
+      "speedup": 753.2322619609108,
+      "max_absolute_gap": 0.0
+    }
+  }
+}

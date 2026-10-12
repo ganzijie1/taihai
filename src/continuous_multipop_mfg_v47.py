@@ -6,6 +6,12 @@ import numpy as np
 
 from cognitive_geometry_v52 import CognitiveInformationGeometry
 from fp_solvers_v52 import FokkerPlanckSolver
+from information_geometry_v58 import PartiallyObservableInformationGeometry
+from network_geometry_v59 import NetworkGeometrySystem
+from riemannian_geometry_v60 import (
+    FisherRaoTrustRegion,
+    RegularizedRiemannianAnderson,
+)
 from numerical_acceleration import (
     PathwiseAnderson,
     batched_hjb_policy,
@@ -52,6 +58,11 @@ class MFGFactors:
     sinkhorn_distance: float = 0.0
     wfr_distance: float = 0.0
     fp_backend: str = ""
+    belief_truth_gap: float = 0.0
+    observation_uncertainty: float = 0.0
+    bridge_cost: float = 0.0
+    network_bottleneck_risk: float = 0.0
+    network_sheaf_consistency: float = 1.0
 
 
 class ContinuousMultiPopulationMFG:
@@ -69,6 +80,31 @@ class ContinuousMultiPopulationMFG:
         advanced_graphon: bool = False, graphon_uncertainty_scale: float = 0.06,
         graphon_mode: str = "multilayer", fp_backend: str = "legacy_explicit",
         geomloss_interval: int = 12, finite_nodes_per_type: int = 3,
+        wfr_strang: bool = False, natural_gradient_major: bool = False,
+        partial_observation_geometry: bool = False,
+        full_wfr_jko: bool = False,
+        fisher_trust_radius: float = 0.035,
+        minor_policy_trust_radius: float = 0.025,
+        information_ambiguity_radius: float = 0.025,
+        trust_region_enabled: bool = True,
+        belief_filter_enabled: bool = True,
+        credibility_hmm_enabled: bool = True,
+        schrodinger_bridge_enabled: bool = True,
+        fgw_alignment_enabled: bool = True,
+        robust_information_enabled: bool = True,
+        information_value_enabled: bool = True,
+        network_geometry_enabled: bool = False,
+        network_geometry_spectral_interval: int = 12,
+        intensity_transition_enabled: bool = True,
+        supra_laplacian_enabled: bool = True,
+        spectral_geometry_enabled: bool = True,
+        forman_curvature_enabled: bool = True,
+        sheaf_laplacian_enabled: bool = True,
+        riemannian_anderson_enabled: bool = False,
+        riemannian_anderson_regularization: float = 1.0e-5,
+        riemannian_trust_region_enabled: bool = False,
+        riemannian_fixed_point_iterations: int = 96,
+        riemannian_minor_relaxation: float = 0.48,
     ):
         if grid_points < 15 or grid_points % 2 == 0:
             raise ValueError("grid_points must be odd and at least 15")
@@ -78,6 +114,28 @@ class ContinuousMultiPopulationMFG:
         self.geometry_enabled = bool(geometry_enabled)
         self.advanced_graphon = bool(advanced_graphon)
         self.graphon_mode = graphon_mode
+        self.wfr_strang = bool(wfr_strang)
+        self.natural_gradient_major = bool(natural_gradient_major)
+        self.partial_observation_geometry = bool(partial_observation_geometry)
+        self.full_wfr_jko = bool(full_wfr_jko)
+        self.network_geometry_enabled = bool(network_geometry_enabled)
+        self.riemannian_anderson_enabled = bool(riemannian_anderson_enabled)
+        self.riemannian_anderson_regularization = float(
+            riemannian_anderson_regularization
+        )
+        self.riemannian_trust_region_enabled = bool(
+            riemannian_trust_region_enabled
+        )
+        self.riemannian_fixed_point_iterations = max(
+            int(riemannian_fixed_point_iterations), 48
+        )
+        self.riemannian_minor_relaxation = float(
+            np.clip(riemannian_minor_relaxation, 0.08, 0.48)
+        )
+        self.minimum_minor_relaxation_used = self.riemannian_minor_relaxation
+        self.fisher_trust_radius = float(fisher_trust_radius)
+        self.minor_policy_trust_radius = float(minor_policy_trust_radius)
+        self.trust_region_enabled = bool(trust_region_enabled)
         if graphon_mode not in {"none", "block", "low_rank", "multilayer", "finite"}:
             raise ValueError("unsupported graphon_mode")
         self.rng = np.random.default_rng(seed)
@@ -127,6 +185,18 @@ class ContinuousMultiPopulationMFG:
         self.low_rank_layer_kernels = np.clip(
             self.low_rank_layer_kernels, 0.01, 1.50
         )
+        self.network_geometry = (
+            NetworkGeometrySystem(
+                self.path_layer_kernels,
+                spectral_interval=network_geometry_spectral_interval,
+                intensity_transition_enabled=intensity_transition_enabled,
+                supra_laplacian_enabled=supra_laplacian_enabled,
+                spectral_geometry_enabled=spectral_geometry_enabled,
+                forman_curvature_enabled=forman_curvature_enabled,
+                sheaf_laplacian_enabled=sheaf_laplacian_enabled,
+            )
+            if self.network_geometry_enabled else None
+        )
         major_bias = np.array([0.06, 0.10, -0.02, -0.05])[None, None, :]
         self.major_action = np.clip(
             (2.0 * initial_support - 1.0)[:, :, None] + major_bias, -0.90, 0.90
@@ -136,11 +206,27 @@ class ContinuousMultiPopulationMFG:
         self.previous_joint_action = np.zeros(
             (paths, len(ACTORS), len(AGES), len(ACTION_CHANNELS))
         )
+        if self.partial_observation_geometry:
+            self.previous_joint_action.fill(0.05)
         self.engagement_mass = np.ones((paths, len(ACTORS), len(AGES)))
         self.cognitive_transport_cost = np.zeros((paths, len(ACTORS), len(AGES)))
         self.fp_solver = FokkerPlanckSolver(self.dx, backend=fp_backend)
         self.information_geometry = CognitiveInformationGeometry(
             self.x, device=self.fp_solver.device
+        )
+        self.belief_system = (
+            PartiallyObservableInformationGeometry(
+                paths, seed + 71_003, initial_support,
+                self.actor_kernel, self.age_kernel,
+                ambiguity_radius=information_ambiguity_radius,
+                belief_filter_enabled=belief_filter_enabled,
+                credibility_hmm_enabled=credibility_hmm_enabled,
+                schrodinger_bridge_enabled=schrodinger_bridge_enabled,
+                fgw_alignment_enabled=fgw_alignment_enabled,
+                robust_information_enabled=robust_information_enabled,
+                information_value_enabled=information_value_enabled,
+            )
+            if self.partial_observation_geometry else None
         )
         self.geomloss_interval = max(int(geomloss_interval), 1)
         self.finite_nodes_per_type = max(int(finite_nodes_per_type), 2)
@@ -168,6 +254,7 @@ class ContinuousMultiPopulationMFG:
         self.max_fixed_point_residual = 0.0
         self.max_mass_residual = 0.0
         self.nonconverged_months = 0
+        self.nonconverged_events: list[dict[str, object]] = []
         self.max_bellman_residual = 0.0
         self.max_density_residual = 0.0
         self.max_policy_iterations_used = 0
@@ -189,10 +276,36 @@ class ContinuousMultiPopulationMFG:
         self.max_sinkhorn_distance = 0.0
         self.min_engagement_mass = 1.0
         self.max_engagement_mass = 1.0
+        self.max_natural_gradient_distance = 0.0
+        self.max_wfr_strang_mass_residual = 0.0
+        self.max_full_wfr_conditional_residual = 0.0
+        self.max_full_wfr_stock_residual = 0.0
+        self.max_major_trust_region_kl = 0.0
+        self.max_minor_trust_region_kl = 0.0
+        self.major_trust_region_backtracks = 0
+        self.minor_trust_region_backtracks = 0
+        self.major_riemannian_trust = FisherRaoTrustRegion(
+            self.fisher_trust_radius, maximum_radius=0.14
+        )
+        self.minor_riemannian_trust = FisherRaoTrustRegion(
+            self.minor_policy_trust_radius, maximum_radius=0.10
+        )
+        self.riemannian_anderson_diagnostics = None
 
     def _fisher_rao_mix(
         self, opening: np.ndarray, target: np.ndarray, weight: float = 0.78
     ) -> tuple[np.ndarray, float]:
+        if self.partial_observation_geometry and self.trust_region_enabled:
+            p = np.maximum(opening * self.dx, 1.0e-15)
+            q = np.maximum(target * self.dx, 1.0e-15)
+            affinity = np.clip(
+                np.sum(np.sqrt(p * q), axis=-1), 0.0, 1.0
+            )
+            full_distance = float(np.max(2.0 * np.arccos(affinity)))
+            if full_distance * weight > self.fisher_trust_radius:
+                weight = max(
+                    0.02, self.fisher_trust_radius / max(full_distance, 1.0e-12)
+                )
         return self.information_geometry.fisher_rao_mix(opening, target, weight)
 
     def _moments(self, density: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -204,7 +317,7 @@ class ContinuousMultiPopulationMFG:
 
     def _apply_jump_generator(
         self, density: np.ndarray, common_noise: np.ndarray,
-        jump_signal: np.ndarray, network: np.ndarray,
+        jump_signal: np.ndarray, network: np.ndarray, dt: float = 1.0,
     ) -> tuple[np.ndarray, float]:
         """Apply the common-noise jump generator on the master event clock."""
         x = self.x[None, None, None, :]
@@ -213,10 +326,10 @@ class ContinuousMultiPopulationMFG:
         recovery = 0.035 * network[:, :, None, None] * (0.25 - np.abs(x))
         fitness = directional + polarisation + recovery
         evolved, mass, distance = self.information_geometry.wfr_reaction_step(
-            density, self.engagement_mass, fitness, dt=1.0
+            density, self.engagement_mass, fitness, dt=dt
         )
-        attrition = np.exp(-0.10 * jump_signal[:, :, None])
-        recovery_mass = 1.0 + 0.025 * network[:, :, None]
+        attrition = np.exp(-0.10 * jump_signal[:, :, None] * dt)
+        recovery_mass = np.exp(np.log1p(0.025 * network[:, :, None]) * dt)
         self.engagement_mass = np.clip(mass * attrition * recovery_mass, 0.05, 2.50)
         self.min_engagement_mass = min(
             self.min_engagement_mass, float(np.min(self.engagement_mass))
@@ -226,6 +339,125 @@ class ContinuousMultiPopulationMFG:
         )
         self.max_wfr_distance = max(self.max_wfr_distance, distance)
         return evolved, distance
+
+    def _reaction_fitness(
+        self, common_noise: np.ndarray, jump_signal: np.ndarray,
+        network: np.ndarray,
+    ) -> np.ndarray:
+        x = self.x[None, None, None, :]
+        directional = 0.22 * common_noise[:, :, None, None] * x
+        polarisation = 0.30 * jump_signal[:, :, None, None] * (np.abs(x) - 0.44)
+        recovery = 0.035 * network[:, :, None, None] * (0.25 - np.abs(x))
+        attrition = -0.10 * jump_signal[:, :, None, None]
+        reentry = np.log1p(0.025 * network[:, :, None, None])
+        return np.clip(
+            directional + polarisation + recovery + attrition + reentry,
+            -0.80, 0.55,
+        )
+
+    @staticmethod
+    def _bernoulli_kl(opening: np.ndarray, closing: np.ndarray) -> np.ndarray:
+        p = np.clip(opening, 1.0e-8, 1.0 - 1.0e-8)
+        q = np.clip(closing, 1.0e-8, 1.0 - 1.0e-8)
+        return p * np.log(p / q) + (1.0 - p) * np.log((1.0 - p) / (1.0 - q))
+
+    def _minor_trust_step(
+        self, opening: np.ndarray, target: np.ndarray, weight: float,
+    ) -> np.ndarray:
+        opening = np.clip(opening, 1.0e-8, 1.0 - 1.0e-8)
+        target = np.clip(target, 1.0e-8, 1.0 - 1.0e-8)
+        trial_weight = float(weight)
+        while True:
+            trial = np.clip(
+                (1.0 - trial_weight) * opening + trial_weight * target,
+                1.0e-8, 1.0 - 1.0e-8,
+            )
+            maximum = float(np.max(self._bernoulli_kl(trial, opening)))
+            if maximum <= self.minor_policy_trust_radius or trial_weight <= 0.015:
+                break
+            trial_weight *= 0.5
+            self.minor_trust_region_backtracks += 1
+        self.max_minor_trust_region_kl = max(
+            self.max_minor_trust_region_kl, maximum
+        )
+        return trial
+
+    def _natural_major_step(
+        self, opening: np.ndarray, target: np.ndarray, weight: float,
+    ) -> tuple[np.ndarray, float]:
+        """Fisher--Rao update on positive/negative Bernoulli action shares."""
+        opening_probability = np.clip(0.5 * (opening + 1.0), 1.0e-8, 1.0 - 1.0e-8)
+        target_probability = np.clip(0.5 * (target + 1.0), 1.0e-8, 1.0 - 1.0e-8)
+        p = np.stack((opening_probability, 1.0 - opening_probability), axis=-1)
+        q = np.stack((target_probability, 1.0 - target_probability), axis=-1)
+        root_p = np.sqrt(p)
+        root_q = np.sqrt(q)
+        affinity = np.clip(np.sum(root_p * root_q, axis=-1, keepdims=True), 0.0, 1.0)
+        theta = np.arccos(affinity)
+        sine = np.sin(theta)
+        left = np.where(
+            sine > 1.0e-10,
+            np.sin((1.0 - weight) * theta) / np.maximum(sine, 1.0e-15),
+            1.0 - weight,
+        )
+        right = np.where(
+            sine > 1.0e-10,
+            np.sin(weight * theta) / np.maximum(sine, 1.0e-15),
+            weight,
+        )
+        mixed = np.square(left * root_p + right * root_q)
+        mixed /= np.maximum(np.sum(mixed, axis=-1, keepdims=True), 1.0e-15)
+        if self.partial_observation_geometry and self.trust_region_enabled:
+            trial_weight = 1.0
+            while True:
+                trial = np.maximum(
+                    (1.0 - trial_weight) * p + trial_weight * mixed, 1.0e-15
+                )
+                trial /= np.sum(trial, axis=-1, keepdims=True)
+                kl = np.sum(
+                    trial * np.log(trial / np.maximum(p, 1.0e-15)), axis=-1
+                )
+                maximum_kl = float(np.max(kl))
+                if maximum_kl <= self.fisher_trust_radius or trial_weight <= 0.015:
+                    mixed = trial
+                    break
+                trial_weight *= 0.5
+                self.major_trust_region_backtracks += 1
+            self.max_major_trust_region_kl = max(
+                self.max_major_trust_region_kl, maximum_kl
+            )
+        distance = float(np.max(2.0 * theta))
+        self.max_natural_gradient_distance = max(
+            self.max_natural_gradient_distance, distance
+        )
+        return np.clip(2.0 * mixed[..., 0] - 1.0, -1.0, 1.0), distance
+
+    def _riemannian_minor_step(
+        self, opening: np.ndarray, target: np.ndarray, weight: float,
+    ) -> np.ndarray:
+        updated, _ = self.minor_riemannian_trust.step(opening, target, weight)
+        self.max_minor_trust_region_kl = max(
+            self.max_minor_trust_region_kl,
+            self.minor_riemannian_trust.diagnostics.maximum_kl,
+        )
+        return updated
+
+    def _riemannian_major_step(
+        self, opening: np.ndarray, target: np.ndarray, weight: float,
+    ) -> tuple[np.ndarray, float]:
+        opening_probability = np.clip(0.5 * (opening + 1.0), 1.0e-10, 1.0 - 1.0e-10)
+        target_probability = np.clip(0.5 * (target + 1.0), 1.0e-10, 1.0 - 1.0e-10)
+        updated, distance = self.major_riemannian_trust.step(
+            opening_probability, target_probability, weight
+        )
+        self.max_major_trust_region_kl = max(
+            self.max_major_trust_region_kl,
+            self.major_riemannian_trust.diagnostics.maximum_kl,
+        )
+        self.max_natural_gradient_distance = max(
+            self.max_natural_gradient_distance, distance
+        )
+        return np.clip(2.0 * updated - 1.0, -1.0, 1.0), distance
 
     def _joint_action_response(
         self, density: np.ndarray, control: np.ndarray, damage: np.ndarray,
@@ -255,7 +487,10 @@ class ContinuousMultiPopulationMFG:
     def _effective_graphon(
         self, damage: np.ndarray, shortage: np.ndarray, network: np.ndarray,
         common_noise: np.ndarray, jump_signal: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
+        actor_signal: np.ndarray,
+        fgw_alignment: np.ndarray | None = None,
+        ambiguity_radius: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         if self.graphon_mode == "none":
             kernel = np.ones(
                 (self.paths, len(GRAPHON_LAYERS), len(ACTORS), len(ACTORS))
@@ -271,6 +506,13 @@ class ContinuousMultiPopulationMFG:
         else:
             kernel = self.path_layer_kernels.copy()
 
+        if fgw_alignment is not None:
+            kernel *= np.asarray(fgw_alignment)[None, None, :, :]
+        if ambiguity_radius is not None:
+            radius = np.asarray(ambiguity_radius)[:, None, :, None]
+            off_diagonal = 1.0 - np.eye(len(ACTORS))[None, None, :, :]
+            kernel *= np.exp(-radius * off_diagonal)
+
         receiver_network = (0.72 + 0.28 * network)[:, None, :, None]
         sender_damage = (1.0 + 0.34 * damage)[:, None, None, :]
         sender_shortage = (1.0 + 0.24 * shortage)[:, None, None, :]
@@ -282,12 +524,6 @@ class ContinuousMultiPopulationMFG:
             1.0 + 0.30 * common_noise + 0.42 * jump_signal, 0.55, 1.75
         )
         kernel *= jump_scale[:, None, :, None]
-        row_sum = np.sum(kernel, axis=3, keepdims=True)
-        self.max_kernel_row_residual = max(
-            self.max_kernel_row_residual,
-            float(np.max(np.abs(np.sum(kernel / np.maximum(row_sum, 1e-12), axis=3) - 1.0))),
-        )
-        kernel /= np.maximum(row_sum, 1e-12)
         weights = np.broadcast_to(
             np.array([0.34, 0.24, 0.24, 0.18])[None, :],
             (self.paths, len(GRAPHON_LAYERS)),
@@ -295,20 +531,48 @@ class ContinuousMultiPopulationMFG:
         weights[:, 0] += 0.08 * np.mean(common_noise, axis=1)
         weights[:, 3] += 0.08 * np.mean(jump_signal, axis=1)
         weights /= np.sum(weights, axis=1, keepdims=True)
+        if self.network_geometry is not None:
+            geometry = self.network_geometry.update(
+                target_kernel=kernel,
+                base_layer_weights=weights,
+                damage=damage,
+                shortage=shortage,
+                network=network,
+                common_noise=common_noise,
+                jump_signal=jump_signal,
+                actor_signal=actor_signal,
+            )
+            kernel = geometry.transition
+            weights = geometry.layer_weights
+            intensity_multiplier = geometry.intensity_multiplier
+        else:
+            row_sum = np.sum(kernel, axis=3, keepdims=True)
+            kernel /= np.maximum(row_sum, 1e-12)
+            intensity_multiplier = np.ones(kernel.shape[:-1])
+        self.max_kernel_row_residual = max(
+            self.max_kernel_row_residual,
+            float(np.max(np.abs(np.sum(kernel, axis=3) - 1.0))),
+        )
         self.layer_activity += np.sum(weights, axis=0)
-        return kernel, weights
+        return kernel, weights, intensity_multiplier
 
     def _multilayer_fields(
         self, mean: np.ndarray, action: np.ndarray, kernel: np.ndarray,
         weights: np.ndarray, major_action: np.ndarray,
+        intensity_multiplier: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         actor_state = np.einsum("plij,pjh->plih", kernel, mean)
         actor_action = np.einsum("plij,pjhc->plihc", kernel, action)
+        if intensity_multiplier is not None:
+            actor_state *= intensity_multiplier[..., None]
+            actor_action *= intensity_multiplier[..., None, None]
         age_state = np.einsum("pih,gh->pig", mean, self.age_kernel)
         age_action = np.einsum("pihc,gh->pigc", action, self.age_kernel)
         layer_state = 0.68 * actor_state + 0.32 * age_state[:, None, :, :]
         layer_action = 0.68 * actor_action + 0.32 * age_action[:, None, :, :, :]
         layer_major_by_role = np.einsum("plij,pjm->plim", kernel, major_action)
+        if intensity_multiplier is not None:
+            layer_major_by_role *= intensity_multiplier[..., None]
         layer_major = np.einsum(
             "plim,m->pli", layer_major_by_role, self.major_role_weights
         )
@@ -319,7 +583,7 @@ class ContinuousMultiPopulationMFG:
 
     def _finite_network_fields(
         self, mean: np.ndarray, action: np.ndarray, kernel: np.ndarray,
-        weights: np.ndarray,
+        weights: np.ndarray, intensity_multiplier: np.ndarray | None = None,
     ) -> tuple[np.ndarray, np.ndarray, float]:
         """Back-project the Graphon equilibrium to a sampled finite network."""
         checked = min(mean.shape[0], self.finite_edge_uniform.shape[0])
@@ -364,6 +628,9 @@ class ContinuousMultiPopulationMFG:
                         layer_action[layer, actor, age] = np.mean(
                             sampled_action, axis=0
                         )
+            if intensity_multiplier is not None:
+                layer_state *= intensity_multiplier[path, :, :, None]
+                layer_action *= intensity_multiplier[path, :, :, None, None]
             state_result[path] = np.einsum("l,lih->ih", weights[path], layer_state)
             action_result[path] = np.einsum(
                 "l,lihc->ihc", weights[path], layer_action
@@ -371,6 +638,7 @@ class ContinuousMultiPopulationMFG:
         graphon_state, graphon_action, _ = self._multilayer_fields(
             mean[:checked], action[:checked], kernel[:checked], weights[:checked],
             self.major_action[:checked],
+            None if intensity_multiplier is None else intensity_multiplier[:checked],
         )
         error = float(max(
             np.max(np.abs(state_result - graphon_state)),
@@ -389,8 +657,13 @@ class ContinuousMultiPopulationMFG:
         second[..., -1] = second[..., -2]
         return first, second
 
-    def _fp_step(self, density: np.ndarray, drift: np.ndarray, sigma: np.ndarray, dt: float) -> np.ndarray:
-        evolved, _ = self.fp_solver.step(density, drift, sigma, dt)
+    def _fp_step(
+        self, density: np.ndarray, drift: np.ndarray, sigma: np.ndarray,
+        dt: float, repeats: int = 1,
+    ) -> np.ndarray:
+        evolved, _ = self.fp_solver.step_repeated(
+            density, drift, sigma, dt, repeats
+        )
         return evolved
 
     def _solve_hjb(
@@ -471,12 +744,38 @@ class ContinuousMultiPopulationMFG:
             np.zeros_like(damage) if jump_signal is None
             else np.clip(jump_signal, 0.0, 1.0)
         )
+        information_factors = None
+        effective_progress = progress
+        information_uncertainty = np.zeros_like(progress)
+        if self.belief_system is not None:
+            information_factors = self.belief_system.update(
+                progress=progress, damage=damage, shortage=shortage,
+                inflation=inflation, financial_stress=financial_stress,
+                command=command, network=network, common_noise=common_noise,
+                jump_signal=jump_signal,
+            )
+            belief_gap = (
+                information_factors.robust_self_belief
+                - information_factors.self_truth
+            )
+            effective_progress = np.clip(
+                progress + 0.34 * belief_gap, -1.0, 1.0
+            )
+            information_uncertainty = information_factors.observation_uncertainty
+            self_bridge = information_factors.bridge_cost[
+                :, np.arange(len(ACTORS)), np.arange(len(ACTORS))
+            ]
+            self.cognitive_transport_cost = (
+                0.72 * self.cognitive_transport_cost
+                + 0.28 * self_bridge[:, :, None]
+            )
         age_sensitivity = np.array([1.12, 1.04, 0.94, 0.84])[None, None, :]
         benefit = (
-            0.70 * progress - 0.55 * damage - 0.48 * shortage
+            0.70 * effective_progress - 0.55 * damage - 0.48 * shortage
             - 0.34 * inflation - 0.30 * financial_stress
             + 0.28 * command + 0.18 * network
             + 0.34 * contagion_mobilization - 0.42 * contagion_fatigue
+            - 0.10 * information_uncertainty
         )[:, :, None] * age_sensitivity - 0.06 * self.cognitive_transport_cost
         fatigue_cost = (
             0.44 * damage + 0.38 * shortage + 0.30 * inflation
@@ -484,13 +783,22 @@ class ContinuousMultiPopulationMFG:
         )[:, :, None]
 
         calendar_opening_density = self.density.copy()
-        if self.advanced_graphon and self.geometry_enabled:
+        if (
+            self.advanced_graphon and self.geometry_enabled
+            and not self.full_wfr_jko
+        ):
             opening_density, wfr_distance = self._apply_jump_generator(
-                calendar_opening_density, common_noise, jump_signal, network
+                calendar_opening_density, common_noise, jump_signal, network,
+                dt=0.5 if self.wfr_strang else 1.0,
             )
         else:
             opening_density = calendar_opening_density
             wfr_distance = 0.0
+        opening_engagement_mass = self.engagement_mass.copy()
+        candidate_engagement_mass = opening_engagement_mass.copy()
+        reaction_fitness = self._reaction_fitness(
+            common_noise, jump_signal, network
+        )
         candidate = opening_density.copy()
         value = self.value.copy()
         residual = np.inf
@@ -503,24 +811,53 @@ class ContinuousMultiPopulationMFG:
         major_target = major_action.copy()
         network_action_field = np.zeros_like(minor_action)
         major_residual = 0.0
-        kernel, layer_weights = self._effective_graphon(
-            damage, shortage, network, common_noise, jump_signal
+        kernel, layer_weights, intensity_multiplier = self._effective_graphon(
+            damage, shortage, network, common_noise, jump_signal,
+            effective_progress,
+            fgw_alignment=(
+                information_factors.fgw_alignment
+                if information_factors is not None else None
+            ),
+            ambiguity_radius=(
+                information_factors.ambiguity_radius
+                if information_factors is not None else None
+            ),
         )
-        accelerator = PathwiseAnderson(depth=self.anderson_depth, damping=0.38)
+        accelerator = (
+            RegularizedRiemannianAnderson(
+                depth=self.anderson_depth,
+                damping=0.52,
+                regularization=self.riemannian_anderson_regularization,
+            )
+            if self.riemannian_anderson_enabled
+            else PathwiseAnderson(depth=self.anderson_depth, damping=0.38)
+        )
         previous_residual = np.inf
+        previous_action_residual = np.inf
+        minor_relaxation = self.riemannian_minor_relaxation
+        minimum_minor_relaxation = minor_relaxation
+        action_residual_trace: list[float] = []
+        post_action_residual = np.inf
         max_policy_used = 0
         fixed_point_iterations = 0
         fisher_rao_distance = 0.0
-        for iteration in range(max_fixed_point_iterations):
+        iteration_budget = (
+            max(max_fixed_point_iterations, self.riemannian_fixed_point_iterations)
+            if self.riemannian_anderson_enabled
+            else max_fixed_point_iterations
+        )
+        for iteration in range(iteration_budget):
             mean, _ = self._moments(candidate)
             actor_mean = np.sum(mean * self.age_weights[None, None, :], axis=2)
             if self.advanced_graphon:
                 state_field, network_action_field, major_field = self._multilayer_fields(
-                    mean, minor_action, kernel, layer_weights, major_action
+                    mean, minor_action, kernel, layer_weights, major_action,
+                    intensity_multiplier,
                 )
                 if self.graphon_mode == "finite":
                     state_field, network_action_field, finite_error = self._finite_network_fields(
-                        mean, minor_action, kernel, layer_weights
+                        mean, minor_action, kernel, layer_weights,
+                        intensity_multiplier,
                     )
                     self.max_finite_network_field_error = max(
                         self.max_finite_network_field_error, finite_error
@@ -537,7 +874,16 @@ class ContinuousMultiPopulationMFG:
                     major_base + 0.13 * network - 0.10 * jump_signal,
                 ], axis=-1))
                 major_residual = float(np.max(np.abs(major_target - major_action)))
-                major_action = 0.55 * major_action + 0.45 * major_target
+                if self.riemannian_trust_region_enabled:
+                    major_action, _ = self._riemannian_major_step(
+                        major_action, major_target, 0.45
+                    )
+                elif self.natural_gradient_major:
+                    major_action, _ = self._natural_major_step(
+                        major_action, major_target, 0.45
+                    )
+                else:
+                    major_action = 0.55 * major_action + 0.45 * major_target
                 action_externality = np.einsum(
                     "pihc,c->pih", network_action_field,
                     np.array([0.34, 0.20, -0.18, -0.16, 0.24]),
@@ -567,16 +913,66 @@ class ContinuousMultiPopulationMFG:
                 candidate, control, damage, shortage, inflation, network
             )
             action_residual = float(np.max(np.abs(action_new - minor_action)))
-            minor_action = 0.52 * minor_action + 0.48 * action_new
+            if self.riemannian_trust_region_enabled:
+                if action_residual > 1.05 * previous_action_residual:
+                    minor_relaxation = max(0.08, 0.65 * minor_relaxation)
+                elif action_residual < 0.75 * previous_action_residual:
+                    minor_relaxation = min(
+                        self.riemannian_minor_relaxation,
+                        1.08 * minor_relaxation,
+                    )
+                minimum_minor_relaxation = min(
+                    minimum_minor_relaxation, minor_relaxation
+                )
+                self.minimum_minor_relaxation_used = min(
+                    self.minimum_minor_relaxation_used, minor_relaxation
+                )
+                minor_action = self._riemannian_minor_step(
+                    minor_action, action_new, minor_relaxation
+                )
+            elif self.partial_observation_geometry and self.trust_region_enabled:
+                minor_action = self._minor_trust_step(
+                    minor_action, action_new, 0.48
+                )
+            else:
+                minor_action = 0.52 * minor_action + 0.48 * action_new
+            post_action_residual = float(np.max(np.abs(action_new - minor_action)))
+            action_residual_trace.append(action_residual)
+            if len(action_residual_trace) > 16:
+                action_residual_trace.pop(0)
             max_policy_used = max(max_policy_used, policy_used)
             drift = np.clip(base_drift + control, -0.75, 0.75)
             # The forward equation always starts at the month-opening
             # distribution. Picard iterations reconcile the conjectured
             # endpoint mean field with that single monthly transition; they
             # must not advance calendar time repeatedly inside one month.
-            evolved = opening_density.copy()
-            for _ in range(3):
-                evolved = self._fp_step(evolved, drift, self.diffusion, dt=0.025)
+            if self.full_wfr_jko:
+                evolved, candidate_engagement_mass, wfr_diagnostic = (
+                    self.fp_solver.step_repeated_unbalanced(
+                        opening_density, opening_engagement_mass,
+                        drift * 0.075, self.diffusion * np.sqrt(0.075),
+                        reaction_fitness, dt=1.0 / 3.0, repeats=3,
+                    )
+                )
+                self.max_full_wfr_conditional_residual = max(
+                    self.max_full_wfr_conditional_residual,
+                    wfr_diagnostic.conditional_mass_residual,
+                )
+                self.max_full_wfr_stock_residual = max(
+                    self.max_full_wfr_stock_residual,
+                    wfr_diagnostic.stock_accounting_residual,
+                )
+                wfr_distance = max(
+                    wfr_distance,
+                    2.0 * float(np.max(np.abs(
+                        np.sqrt(np.maximum(candidate_engagement_mass, 0.0))
+                        - np.sqrt(np.maximum(opening_engagement_mass, 0.0))
+                    ))) + np.sqrt(max(wfr_diagnostic.action, 0.0)),
+                )
+            else:
+                evolved = self._fp_step(
+                    opening_density, drift, self.diffusion, dt=0.025, repeats=3
+                )
             old_mean, _ = self._moments(candidate)
             new_mean, _ = self._moments(evolved)
             mean_residual = float(np.max(np.abs(new_mean - old_mean)))
@@ -591,24 +987,56 @@ class ContinuousMultiPopulationMFG:
             )
             if residual > 1.35 * previous_residual:
                 accelerator.reset()
-            accelerated = accelerator.step(candidate, evolved)
-            accelerated = np.maximum(accelerated, 0.0)
-            accelerated /= np.maximum(
-                np.sum(accelerated, axis=-1, keepdims=True) * self.dx, 1e-12
-            )
-            if self.geometry_enabled:
+            if self.riemannian_anderson_enabled:
+                accelerated = accelerator.step(candidate, evolved, self.dx)
+                candidate = accelerated
+            else:
+                accelerated = accelerator.step(candidate, evolved)
+                accelerated = np.maximum(accelerated, 0.0)
+                accelerated /= np.maximum(
+                    np.sum(accelerated, axis=-1, keepdims=True) * self.dx, 1e-12
+                )
+            if self.geometry_enabled and not self.riemannian_anderson_enabled:
                 candidate, step_distance = self._fisher_rao_mix(candidate, accelerated)
                 fisher_rao_distance = max(fisher_rao_distance, step_distance)
-            else:
+            elif not self.riemannian_anderson_enabled:
                 candidate = accelerated
             previous_residual = residual
+            previous_action_residual = action_residual
             fixed_point_iterations = iteration + 1
             if residual < tolerance:
                 break
 
+        if (
+            self.advanced_graphon and self.geometry_enabled and self.wfr_strang
+            and not self.full_wfr_jko
+        ):
+            candidate, closing_wfr_distance = self._apply_jump_generator(
+                candidate, common_noise, jump_signal, network, dt=0.5
+            )
+            wfr_distance = max(wfr_distance, closing_wfr_distance)
+            self.max_wfr_strang_mass_residual = max(
+                self.max_wfr_strang_mass_residual,
+                float(np.max(np.abs(np.sum(candidate, axis=-1) * self.dx - 1.0))),
+            )
+        if self.full_wfr_jko:
+            self.engagement_mass = np.clip(
+                candidate_engagement_mass, 0.05, 2.50
+            )
+            self.min_engagement_mass = min(
+                self.min_engagement_mass, float(np.min(self.engagement_mass))
+            )
+            self.max_engagement_mass = max(
+                self.max_engagement_mass, float(np.max(self.engagement_mass))
+            )
+            self.max_wfr_distance = max(self.max_wfr_distance, wfr_distance)
         self.density = candidate
+        if self.riemannian_anderson_enabled:
+            self.riemannian_anderson_diagnostics = accelerator.diagnostics
         self.value = value
         self.major_action = np.clip(major_action, -1.0, 1.0)
+        if self.belief_system is not None:
+            self.belief_system.register_information_action(self.major_action)
         self.previous_joint_action = np.clip(minor_action, 0.0, 1.0)
         self.previous_minor_action = np.clip(
             minor_action[..., ACTION_CHANNELS.index("collective_action")], 0.0, 1.0
@@ -638,7 +1066,27 @@ class ContinuousMultiPopulationMFG:
             self.max_fisher_rao_distance, fisher_rao_distance
         )
         if residual >= tolerance:
+            action_gap = np.abs(action_new - minor_action)
+            action_index = tuple(int(x) for x in np.unravel_index(
+                int(np.argmax(action_gap)), action_gap.shape
+            ))
             self.nonconverged_months += 1
+            self.nonconverged_events.append({
+                "month": int(self.month),
+                "residual": float(residual),
+                "mean_residual": float(mean_residual),
+                "density_residual": float(density_residual),
+                "action_residual": float(action_residual),
+                "major_residual": float(major_residual),
+                "post_action_residual": float(post_action_residual),
+                "minor_relaxation": float(minor_relaxation),
+                "minor_trust_radius": float(self.minor_riemannian_trust.radius),
+                "action_index": action_index,
+                "action_value": float(minor_action[action_index]),
+                "action_target": float(action_new[action_index]),
+                "action_residual_trace": [float(x) for x in action_residual_trace],
+                "iterations": int(fixed_point_iterations),
+            })
         support = np.clip(0.5 * (actor_mean + 1.0), 0.01, 0.99)
         fatigue_preference = np.clip(
             0.5 * (1.0 - actor_mean) * (
@@ -688,7 +1136,8 @@ class ContinuousMultiPopulationMFG:
         finite_network_payoff_deviation = 0.0
         if self.advanced_graphon and self.month % 12 == 0:
             _, _, finite_network_error = self._finite_network_fields(
-                mean, self.previous_joint_action, kernel, layer_weights
+                mean, self.previous_joint_action, kernel, layer_weights,
+                intensity_multiplier,
             )
             self.max_finite_network_field_error = max(
                 self.max_finite_network_field_error, finite_network_error
@@ -737,6 +1186,27 @@ class ContinuousMultiPopulationMFG:
             sinkhorn_distance=sinkhorn_distance,
             wfr_distance=wfr_distance,
             fp_backend=self.fp_solver.backend,
+            belief_truth_gap=(
+                float(np.max(np.abs(
+                    information_factors.self_belief - information_factors.self_truth
+                ))) if information_factors is not None else 0.0
+            ),
+            observation_uncertainty=(
+                float(np.mean(information_factors.observation_uncertainty))
+                if information_factors is not None else 0.0
+            ),
+            bridge_cost=(
+                float(np.mean(information_factors.bridge_cost))
+                if information_factors is not None else 0.0
+            ),
+            network_bottleneck_risk=(
+                float(np.mean(self.network_geometry.last_factors.bottleneck_risk))
+                if self.network_geometry is not None else 0.0
+            ),
+            network_sheaf_consistency=(
+                float(np.mean(self.network_geometry.last_factors.sheaf_consistency))
+                if self.network_geometry is not None else 1.0
+            ),
         )
 
     def diagnostics(self) -> dict:
@@ -748,13 +1218,50 @@ class ContinuousMultiPopulationMFG:
             "max_bellman_residual": self.max_bellman_residual,
             "max_mass_residual": self.max_mass_residual,
             "geometry_enabled": self.geometry_enabled,
+            "wfr_strang": self.wfr_strang,
+            "natural_gradient_major": self.natural_gradient_major,
+            "partial_observation_geometry": self.partial_observation_geometry,
+            "network_geometry_enabled": self.network_geometry_enabled,
+            "riemannian_anderson_enabled": self.riemannian_anderson_enabled,
+            "riemannian_fixed_point_iterations": self.riemannian_fixed_point_iterations,
+            "riemannian_minor_relaxation": self.riemannian_minor_relaxation,
+            "minimum_minor_relaxation": self.minimum_minor_relaxation_used,
+            "riemannian_trust_region_enabled": self.riemannian_trust_region_enabled,
+            "full_wfr_jko": self.full_wfr_jko,
+            "fisher_trust_radius": self.fisher_trust_radius,
+            "minor_policy_trust_radius": self.minor_policy_trust_radius,
+            "trust_region_enabled": self.trust_region_enabled,
             "max_fisher_rao_distance": self.max_fisher_rao_distance,
+            "max_natural_gradient_distance": self.max_natural_gradient_distance,
+            "max_wfr_strang_mass_residual": self.max_wfr_strang_mass_residual,
+            "max_full_wfr_conditional_residual": self.max_full_wfr_conditional_residual,
+            "max_full_wfr_stock_residual": self.max_full_wfr_stock_residual,
+            "max_major_trust_region_kl": self.max_major_trust_region_kl,
+            "max_minor_trust_region_kl": self.max_minor_trust_region_kl,
+            "major_trust_region_backtracks": self.major_trust_region_backtracks,
+            "minor_trust_region_backtracks": self.minor_trust_region_backtracks,
             "max_policy_iterations_used": self.max_policy_iterations_used,
             "max_fixed_point_iterations_used": self.max_fixed_point_iterations_used,
             "anderson_accepted_paths": self.anderson_accepted_paths,
             "anderson_rejected_paths": self.anderson_rejected_paths,
+            "riemannian_anderson": (
+                {
+                    "attempted": self.riemannian_anderson_diagnostics.attempted,
+                    "accepted_paths": self.riemannian_anderson_diagnostics.accepted_paths,
+                    "rejected_paths": self.riemannian_anderson_diagnostics.rejected_paths,
+                    "resets": self.riemannian_anderson_diagnostics.resets,
+                    "maximum_tangent_norm": self.riemannian_anderson_diagnostics.maximum_tangent_norm,
+                    "maximum_transport_tangency_residual": self.riemannian_anderson_diagnostics.maximum_transport_tangency_residual,
+                    "maximum_sphere_residual": self.riemannian_anderson_diagnostics.maximum_sphere_residual,
+                    "maximum_regularized_condition": self.riemannian_anderson_diagnostics.maximum_regularized_condition,
+                }
+                if self.riemannian_anderson_diagnostics is not None else None
+            ),
+            "major_riemannian_trust_region": self.major_riemannian_trust.summary(),
+            "minor_riemannian_trust_region": self.minor_riemannian_trust.summary(),
             "numerical_backend": backend_diagnostics(self.numerical_backend),
             "nonconverged_months": self.nonconverged_months,
+            "nonconverged_events": self.nonconverged_events,
             "advanced_graphon": self.advanced_graphon,
             "graphon_mode": self.graphon_mode,
             "layers": list(GRAPHON_LAYERS),
@@ -785,10 +1292,20 @@ class ContinuousMultiPopulationMFG:
             "max_sinkhorn_distance": self.max_sinkhorn_distance,
             "fp_solver": self.fp_solver.diagnostics(),
             "information_geometry": self.information_geometry.diagnostics(),
+            "partial_observation": (
+                self.belief_system.diagnostics()
+                if self.belief_system is not None else None
+            ),
+            "network_geometry": (
+                self.network_geometry.diagnostics()
+                if self.network_geometry is not None else None
+            ),
         }
 
     def kernel_draw_score(self) -> np.ndarray:
         """Pathwise signed log-deviation from the documented block kernel."""
+        if self.network_geometry is not None:
+            return self.network_geometry.kernel_draw_score()
         baseline = np.maximum(self.layer_actor_kernels[None, ...], 1.0e-12)
         return np.mean(
             np.log(np.maximum(self.path_layer_kernels, 1.0e-12) / baseline),

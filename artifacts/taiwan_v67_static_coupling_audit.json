@@ -1,0 +1,35 @@
+{
+  "model_version": "V6.7-LD",
+  "status": "PASS",
+  "blocking_gaps": {},
+  "diagnostic_status": "PASS",
+  "manifest_audit": "PASS",
+  "master_clock": "same-path monthly DEDS",
+  "active_module_count": 104,
+  "weak_coupling_adapters": [],
+  "duplicate_state_owners": [],
+  "mandatory_solver_proxies": [],
+  "simulation_authorized": true,
+  "closed_feedback_loops": [
+    "random geometry->capacity OT->operations/PNT/production/finance->repair/network->random geometry",
+    "belief/FGW->MFG action->social/command/network->next-month path-conditioned belief",
+    "symplectic reachability->PNT/command->operations/damage jump->symplectic state",
+    "state-dependent path risk->pre-registered mixture mode->jump process->campaign/economic/social/political states->rare-set/action ledger->likelihood-weighted terminal estimator"
+  ],
+  "selected_method_boundary": {
+    "active": [
+      "path-conditioned multilayer partial OT",
+      "capacity multicommodity dynamic OT",
+      "WFR closure",
+      "Verlet/Lie group",
+      "port-Hamiltonian shell",
+      "hybrid diffusion-jump empirical action",
+      "MFG empirical-measure relative entropy",
+      "defensive multimodal bridge proposal with exact likelihood ratio"
+    ],
+    "theory_only": [
+      "martingale OT",
+      "symplectic ROM/neural surrogate"
+    ]
+  }
+}

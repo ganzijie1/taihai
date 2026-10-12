@@ -6,13 +6,268 @@ from time import perf_counter
 
 import numpy as np
 
+try:
+    from numba import njit, prange
+    NUMBA_AVAILABLE = True
+except ImportError:  # pragma: no cover
+    njit = None
+    NUMBA_AVAILABLE = False
+    prange = range
+
 import simulate_dual_circulation_v44 as v44
 import simulate_trade_war_v43 as v43
 from accelerated_solver_infrastructure import JAX_AVAILABLE, JaxResidentRuntime
 from jax_equilibrium_solvers import solve_cge_newton_krylov, solve_dsge_jvp
+from numerical_acceleration import PathwiseAnderson
 
 
 PRIMARY_ACTORS = ("CHN", "TWN", "USA", "JPN")
+
+
+if NUMBA_AVAILABLE:
+
+    @njit(cache=True, parallel=True)
+    def _solve_cge_picard_compiled(
+        output, price, wage, rental, cost_wedge, capacity, final_demand,
+        intermediate_weights, armington_elasticity, actor_of_node,
+        actor_gdp_weights, labor_endowment, capital_endowment,
+        max_iterations, tolerance,
+    ):
+        """Path-independent CGE complementarity iterations compiled as one kernel."""
+        paths, nodes = output.shape
+        actors = wage.shape[1]
+        demand_result = np.empty_like(output)
+        labor_node_result = np.empty_like(output)
+        goods_residual = np.empty(paths)
+        factor_residual = np.empty(paths)
+        path_residual = np.empty(paths)
+        path_iterations = np.zeros(paths, dtype=np.int32)
+        for path in prange(paths):
+            intermediate = np.empty(nodes)
+            demand = np.empty(nodes)
+            new_output = np.empty(nodes)
+            price_target = np.empty(nodes)
+            labor_node = np.empty(nodes)
+            capital_node = np.empty(nodes)
+            labor_demand = np.empty(actors)
+            capital_demand = np.empty(actors)
+            wage_target = np.empty(actors)
+            rental_target = np.empty(actors)
+            relaxation = 1.0
+            previous_residual = np.inf
+            for iteration in range(max_iterations):
+                for node in range(nodes):
+                    value = 0.0
+                    for source in range(nodes):
+                        value += output[path, source] * intermediate_weights[node, source]
+                    intermediate[node] = value
+                    delivered = price[path, node] * cost_wedge[path, node]
+                    response = delivered ** (-armington_elasticity[node])
+                    response = min(max(response, 0.25), 3.0)
+                    value = (intermediate[node] + final_demand[path, node]) * response
+                    demand[node] = min(max(value, 0.001), 2.5)
+                    scarcity = max(demand[node] - capacity[path, node], 0.0)
+                    slack = max(capacity[path, node] - demand[node], 0.0)
+                    new_output[node] = min(capacity[path, node], demand[node])
+                    value = cost_wedge[path, node] * np.exp(
+                        0.20 * scarcity - 0.06 * slack
+                    )
+                    price_target[node] = min(max(value, 0.35), 6.0)
+                    actor = actor_of_node[node]
+                    labor_node[node] = (
+                        price[path, node] * new_output[node]
+                        / max(wage[path, actor], 0.15)
+                    )
+                    capital_node[node] = (
+                        price[path, node] * new_output[node]
+                        / max(rental[path, actor], 0.15)
+                    )
+                for actor in range(actors):
+                    labor_value = 0.0
+                    capital_value = 0.0
+                    for node in range(nodes):
+                        weight = actor_gdp_weights[actor, node]
+                        labor_value += labor_node[node] * weight
+                        capital_value += capital_node[node] * weight
+                    labor_demand[actor] = labor_value
+                    capital_demand[actor] = capital_value
+                    wage_target[actor] = min(max(
+                        wage[path, actor] * labor_value
+                        / max(labor_endowment[path, actor], 1.0e-8), 0.25
+                    ), 4.0)
+                    rental_target[actor] = min(max(
+                        rental[path, actor] * capital_value
+                        / max(capital_endowment[path, actor], 1.0e-8), 0.20
+                    ), 4.5)
+                goods = 0.0
+                factors = 0.0
+                for node in range(nodes):
+                    goods = max(goods, abs(new_output[node] - output[path, node]))
+                for actor in range(actors):
+                    labor_gap = labor_demand[actor] - labor_endowment[path, actor]
+                    capital_gap = capital_demand[actor] - capital_endowment[path, actor]
+                    if wage[path, actor] <= 0.250001:
+                        labor_comp = max(labor_gap, 0.0)
+                    elif wage[path, actor] >= 3.999999:
+                        labor_comp = max(-labor_gap, 0.0)
+                    else:
+                        labor_comp = abs(labor_gap)
+                    if rental[path, actor] <= 0.200001:
+                        capital_comp = max(capital_gap, 0.0)
+                    elif rental[path, actor] >= 4.499999:
+                        capital_comp = max(-capital_gap, 0.0)
+                    else:
+                        capital_comp = abs(capital_gap)
+                    factors = max(factors, labor_comp, capital_comp)
+                current = max(goods, factors)
+                goods_residual[path] = goods
+                factor_residual[path] = factors
+                path_residual[path] = current
+                path_iterations[path] = iteration + 1
+                if current < tolerance:
+                    break
+                if current < 5.0e-2 and current > 0.985 * previous_residual:
+                    relaxation = max(0.10, 0.65 * relaxation)
+                else:
+                    relaxation = min(1.0, 1.03 * relaxation)
+                output_step = 0.40 * relaxation
+                price_step = 0.28 * relaxation
+                factor_step = 0.48 * relaxation
+                for node in range(nodes):
+                    output[path, node] = (
+                        (1.0 - output_step) * output[path, node]
+                        + output_step * new_output[node]
+                    )
+                    price[path, node] = (
+                        (1.0 - price_step) * price[path, node]
+                        + price_step * price_target[node]
+                    )
+                for actor in range(actors):
+                    wage[path, actor] = (
+                        (1.0 - factor_step) * wage[path, actor]
+                        + factor_step * wage_target[actor]
+                    )
+                    rental[path, actor] = (
+                        (1.0 - factor_step) * rental[path, actor]
+                        + factor_step * rental_target[actor]
+                    )
+                previous_residual = current
+            for node in range(nodes):
+                demand_result[path, node] = demand[node]
+                labor_node_result[path, node] = labor_node[node]
+        return (
+            output, price, wage, rental, demand_result, labor_node_result,
+            goods_residual, factor_residual, path_residual, path_iterations,
+        )
+
+    @njit(cache=True)
+    def _solve_dsge_picard_compiled(
+        y, pi, rate, exchange, investment, e_pi, e_y,
+        stress, risk, trade_balance, action, fiscal, potential_gap,
+        imported_inflation, natural_rate, target_pi, exchange_anchor,
+        max_iterations, tolerance,
+    ):
+        """Compile the complete bounded DSGE fixed point on native Windows."""
+        paths, actors = y.shape
+        premium = np.empty_like(y)
+        real_rate_gap = np.empty_like(y)
+        path_residual = np.empty(paths)
+        path_iterations = np.zeros(paths, dtype=np.int32)
+        y_new = np.empty_like(y)
+        pi_new = np.empty_like(y)
+        rate_new = np.empty_like(y)
+        exchange_new = np.empty_like(y)
+        investment_new = np.empty_like(y)
+        e_pi_new = np.empty_like(y)
+        e_y_new = np.empty_like(y)
+        for iteration in range(max_iterations):
+            maximum_residual = 0.0
+            for path in range(paths):
+                world_rate = 0.0
+                for actor in range(actors):
+                    value = (
+                        0.32 * stress[path, actor] + 0.28 * risk[path, actor]
+                        + 0.18 * max(-trade_balance[path, actor], 0.0)
+                        + 0.12 * action[path, actor]
+                        + 0.10 * max(exchange[path, actor] - 1.0, 0.0)
+                    )
+                    premium[path, actor] = min(max(value, 0.0), 0.80)
+                    real_rate_gap[path, actor] = (
+                        rate[path, actor] - e_pi[path, actor]
+                        - natural_rate[actor] + premium[path, actor]
+                    )
+                    value = (
+                        0.58 * e_y[path, actor]
+                        - 0.42 * real_rate_gap[path, actor]
+                        + 0.34 * potential_gap[path, actor]
+                        + 0.12 * (fiscal[path, actor] - 0.5)
+                        + 0.10 * trade_balance[path, actor]
+                        - 0.12 * action[path, actor]
+                    )
+                    y_new[path, actor] = min(max(value, -1.2), 0.45)
+                    value = (
+                        0.76 * e_pi[path, actor]
+                        + 0.14 * y_new[path, actor]
+                        + 0.32 * imported_inflation[path, actor]
+                        + 0.12 * premium[path, actor]
+                    )
+                    pi_new[path, actor] = min(max(value, -0.10), 1.50)
+                    value = 0.82 * rate[path, actor] + 0.18 * (
+                        natural_rate[actor] + target_pi[actor]
+                        + 1.45 * (pi_new[path, actor] - target_pi[actor])
+                        + 0.35 * y_new[path, actor]
+                    )
+                    rate_new[path, actor] = min(max(value, 0.0), 0.45)
+                    if actor >= 4:
+                        world_rate += rate_new[path, actor]
+                world_rate /= max(actors - 4, 1)
+                residual = 0.0
+                for actor in range(actors):
+                    value = exchange_anchor[path, actor] * np.exp(0.10 * (
+                        rate_new[path, actor] - world_rate
+                        + premium[path, actor] - trade_balance[path, actor]
+                    ))
+                    exchange_new[path, actor] = min(max(value, 0.35), 4.0)
+                    q_tobin = min(max(
+                        1.0 + 0.45 * y_new[path, actor]
+                        - 0.35 * real_rate_gap[path, actor]
+                        - 0.28 * stress[path, actor], 0.15
+                    ), 1.60)
+                    value = (
+                        0.72 * investment[path, actor]
+                        + 0.28 * q_tobin * fiscal[path, actor]
+                    )
+                    investment_new[path, actor] = min(max(value, 0.08), 1.45)
+                    e_pi_new[path, actor] = min(max(
+                        0.70 * e_pi[path, actor]
+                        + 0.30 * pi_new[path, actor], -0.10
+                    ), 1.20)
+                    e_y_new[path, actor] = min(max(
+                        0.68 * e_y[path, actor]
+                        + 0.32 * y_new[path, actor], -1.0
+                    ), 0.40)
+                    residual = max(residual, abs(y_new[path, actor] - y[path, actor]))
+                    residual = max(residual, abs(pi_new[path, actor] - pi[path, actor]))
+                    residual = max(residual, abs(rate_new[path, actor] - rate[path, actor]))
+                    residual = max(residual, abs(exchange_new[path, actor] - exchange[path, actor]))
+                    residual = max(residual, abs(e_pi_new[path, actor] - e_pi[path, actor]))
+                    residual = max(residual, abs(e_y_new[path, actor] - e_y[path, actor]))
+                    y[path, actor] = 0.30 * y[path, actor] + 0.70 * y_new[path, actor]
+                    pi[path, actor] = 0.30 * pi[path, actor] + 0.70 * pi_new[path, actor]
+                    rate[path, actor] = 0.35 * rate[path, actor] + 0.65 * rate_new[path, actor]
+                    exchange[path, actor] = 0.40 * exchange[path, actor] + 0.60 * exchange_new[path, actor]
+                    investment[path, actor] = 0.38 * investment[path, actor] + 0.62 * investment_new[path, actor]
+                    e_pi[path, actor] = e_pi_new[path, actor]
+                    e_y[path, actor] = e_y_new[path, actor]
+                path_residual[path] = residual
+                path_iterations[path] = iteration + 1
+                maximum_residual = max(maximum_residual, residual)
+            if maximum_residual < tolerance:
+                break
+        return (
+            y, pi, rate, exchange, investment, e_pi, e_y, premium,
+            real_rate_gap, path_residual, path_iterations,
+        )
 
 
 def _sigmoid(x):
@@ -83,7 +338,10 @@ class DynamicMultiRegionalCGE:
     accounts are solved jointly by damped complementarity iterations.
     """
 
-    def __init__(self, paths: int, seed: int, scenario: str):
+    def __init__(
+        self, paths: int, seed: int, scenario: str,
+        econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
         self.paths = paths
         self.rng = np.random.default_rng(seed)
         self.data = v44.build_nested_accounts()
@@ -102,6 +360,12 @@ class DynamicMultiRegionalCGE:
         )
         self.actor_of_node = self.actor_of_region[self.region]
         self.scenario = scenario
+        draws = econometric_draws or {}
+        self.trade_shock_scale = np.asarray(
+            draws.get("trade_shock_scale", np.ones(paths)), dtype=float
+        )
+        if self.trade_shock_scale.shape != (paths,):
+            raise ValueError("trade-shock draws must have shape (paths,)")
         self.scenario_parameters = v43.scenario_parameters(
             scenario, self.rng, paths
         )
@@ -146,6 +410,7 @@ class DynamicMultiRegionalCGE:
         self.last_goods_residual = np.inf
         self.last_factor_residual = np.inf
         self.max_accounting_residual = 0.0
+        self.max_unmet_demand_share = 0.0
         self.max_external_account_residual = 0.0
 
         self.actor_gdp_weights = np.zeros((self.n_actors, self.n_nodes))
@@ -169,14 +434,25 @@ class DynamicMultiRegionalCGE:
         self.actor_scale = np.maximum(self.actor_output_weights.sum(axis=1), 1e-9)
         self.last_solver_iterations = 0
         self.max_solver_iterations = 0
-        requested_solver = os.environ.get("TAIWAN_EQUILIBRIUM_SOLVER", "auto").lower()
+        requested_solver = os.environ.get(
+            "TAIWAN_CGE_SOLVER",
+            os.environ.get("TAIWAN_EQUILIBRIUM_SOLVER", "auto"),
+        ).lower()
         self.jax_runtime = JaxResidentRuntime() if JAX_AVAILABLE else None
         gpu_jax = self.jax_runtime is not None and self.jax_runtime.platform == "gpu"
+        if requested_solver not in {
+            "auto", "picard", "anderson", "newton_krylov", "numba_picard"
+        }:
+            raise ValueError(f"unsupported equilibrium solver {requested_solver!r}")
         self.solver_backend = (
             "newton_krylov" if requested_solver == "newton_krylov"
-            or (requested_solver == "auto" and gpu_jax) else "picard"
+            or (requested_solver == "auto" and gpu_jax) else
+            "anderson" if requested_solver == "anderson" else
+            "numba_picard" if requested_solver == "numba_picard" and NUMBA_AVAILABLE
+            else "picard"
         )
         self.last_newton_diagnostics = None
+        self.last_anderson_diagnostics = None
 
     def snapshot_state(self) -> dict[str, np.ndarray | float]:
         """Capture the month-opening state for non-committing equilibrium trials."""
@@ -196,6 +472,7 @@ class DynamicMultiRegionalCGE:
             "last_goods_residual": self.last_goods_residual,
             "last_factor_residual": self.last_factor_residual,
             "max_accounting_residual": self.max_accounting_residual,
+            "max_unmet_demand_share": self.max_unmet_demand_share,
             "max_external_account_residual": self.max_external_account_residual,
         }
 
@@ -209,6 +486,7 @@ class DynamicMultiRegionalCGE:
         self.last_goods_residual = float(state["last_goods_residual"])
         self.last_factor_residual = float(state["last_factor_residual"])
         self.max_accounting_residual = float(state["max_accounting_residual"])
+        self.max_unmet_demand_share = float(state["max_unmet_demand_share"])
         self.max_external_account_residual = float(state["max_external_account_residual"])
 
     def _scenario_shock(self, month: int, blockade_feedback: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -237,6 +515,7 @@ class DynamicMultiRegionalCGE:
             + sanction[:, None] * bases["chn_sanction"][None, :]
             + shipping[:, None] * bases["shipping"][None, :]
         )
+        shock *= self.trade_shock_scale[:, None]
         china_critical = (self.actor_of_node == 0) & self.military_mask
         shock[:, china_critical] *= 1.0 - 0.72 * china_substitution[:, None]
         trade_loss = np.clip(
@@ -244,6 +523,7 @@ class DynamicMultiRegionalCGE:
             + self.network["chn_trade_share"] * sanction + 0.35 * shipping,
             0.0, 0.90,
         )
+        trade_loss = np.clip(trade_loss * self.trade_shock_scale, 0.0, 0.90)
         return np.clip(shock, 0.0, 0.96), trade_loss
 
     def solve(
@@ -321,6 +601,9 @@ class DynamicMultiRegionalCGE:
         path_iterations = np.zeros(self.paths, dtype=np.int32)
         path_relaxation = np.ones(self.paths, dtype=float)
         previous_path_residual = np.full(self.paths, np.inf)
+        accelerator = PathwiseAnderson(
+            depth=3, damping=0.42, regularization=1.0e-7, trust_ratio=2.25
+        )
         iterations_used = 0
         if self.solver_backend == "newton_krylov":
             solution = solve_cge_newton_krylov(
@@ -383,6 +666,53 @@ class DynamicMultiRegionalCGE:
             current_residual = np.maximum(goods_path_residual, factor_path_residual)
             path_iterations[:] = solution.diagnostics.iterations
             iterations_used = solution.diagnostics.iterations
+            max_iterations = 0
+        if self.solver_backend == "numba_picard":
+            cost_wedge = (
+                1.0 + 0.34 * exogenous_shock + 0.18 * (1.0 - payment_node)
+            )
+            final_demand = region_fd @ self.final_sales_weights.T
+            capital_endowment = self.capital @ self.actor_mean_weights.T
+            (
+                output, price, wage, rental, demand, labor_node,
+                goods_path_residual, factor_path_residual, current_residual,
+                path_iterations,
+            ) = _solve_cge_picard_compiled(
+                np.ascontiguousarray(output), np.ascontiguousarray(price),
+                np.ascontiguousarray(wage), np.ascontiguousarray(rental),
+                np.ascontiguousarray(cost_wedge), np.ascontiguousarray(capacity),
+                np.ascontiguousarray(final_demand),
+                np.ascontiguousarray(self.intermediate_sales_weights),
+                np.ascontiguousarray(self.armington_elasticity),
+                np.ascontiguousarray(self.actor_of_node),
+                np.ascontiguousarray(self.actor_gdp_weights),
+                np.ascontiguousarray(labor_supply),
+                np.ascontiguousarray(capital_endowment), int(max_iterations),
+                float(tolerance),
+            )
+            new_output = np.minimum(capacity, demand)
+            capital_node = price * new_output / np.maximum(
+                rental[:, self.actor_of_node], 0.15
+            )
+            labor_demand = labor_node @ self.actor_gdp_weights.T
+            capital_demand = capital_node @ self.actor_gdp_weights.T
+            labor_gap = labor_demand - labor_supply
+            capital_gap = capital_demand - capital_endowment
+            labor_comp = np.where(
+                wage <= 0.250001, np.maximum(labor_gap, 0.0),
+                np.where(
+                    wage >= 3.999999, np.maximum(-labor_gap, 0.0),
+                    np.abs(labor_gap),
+                ),
+            )
+            capital_comp = np.where(
+                rental <= 0.200001, np.maximum(capital_gap, 0.0),
+                np.where(
+                    rental >= 4.499999, np.maximum(-capital_gap, 0.0),
+                    np.abs(capital_gap),
+                ),
+            )
+            iterations_used = int(np.max(path_iterations))
             max_iterations = 0
         for iteration in range(max_iterations):
             delivered_price = price * (
@@ -465,29 +795,54 @@ class DynamicMultiRegionalCGE:
                     path_relaxation,
                 ),
             )
-            output_step = (0.40 * path_relaxation)[:, None]
-            price_step = (0.28 * path_relaxation)[:, None]
-            factor_step = (0.48 * path_relaxation)[:, None]
-            output = np.where(
-                continuing[:, None],
-                (1.0 - output_step) * output + output_step * new_output,
-                output,
-            )
-            price = np.where(
-                continuing[:, None],
-                (1.0 - price_step) * price + price_step * price_target,
-                price,
-            )
-            wage = np.where(
-                continuing[:, None],
-                (1.0 - factor_step) * wage + factor_step * wage_target,
-                wage,
-            )
-            rental = np.where(
-                continuing[:, None],
-                (1.0 - factor_step) * rental + factor_step * rental_target,
-                rental,
-            )
+            if self.solver_backend == "anderson":
+                packed = np.concatenate((output, price, wage, rental), axis=1)
+                mapped = np.concatenate(
+                    (new_output, price_target, wage_target, rental_target), axis=1
+                )
+                mapped = np.where(continuing[:, None], mapped, packed)
+                proposed = accelerator.step(packed, mapped)
+                node_count = self.n_nodes
+                actor_count = self.n_actors
+                output_next = np.clip(proposed[:, :node_count], 0.001, 1.25)
+                price_next = np.clip(
+                    proposed[:, node_count : 2 * node_count], 0.25, 6.0
+                )
+                wage_next = np.clip(
+                    proposed[:, 2 * node_count : 2 * node_count + actor_count],
+                    0.25, 4.0,
+                )
+                rental_next = np.clip(
+                    proposed[:, 2 * node_count + actor_count :], 0.20, 4.5
+                )
+                output = np.where(continuing[:, None], output_next, output)
+                price = np.where(continuing[:, None], price_next, price)
+                wage = np.where(continuing[:, None], wage_next, wage)
+                rental = np.where(continuing[:, None], rental_next, rental)
+            else:
+                output_step = (0.40 * path_relaxation)[:, None]
+                price_step = (0.28 * path_relaxation)[:, None]
+                factor_step = (0.48 * path_relaxation)[:, None]
+                output = np.where(
+                    continuing[:, None],
+                    (1.0 - output_step) * output + output_step * new_output,
+                    output,
+                )
+                price = np.where(
+                    continuing[:, None],
+                    (1.0 - price_step) * price + price_step * price_target,
+                    price,
+                )
+                wage = np.where(
+                    continuing[:, None],
+                    (1.0 - factor_step) * wage + factor_step * wage_target,
+                    wage,
+                )
+                rental = np.where(
+                    continuing[:, None],
+                    (1.0 - factor_step) * rental + factor_step * rental_target,
+                    rental,
+                )
             previous_path_residual = np.where(
                 continuing, current_residual, previous_path_residual
             )
@@ -495,6 +850,8 @@ class DynamicMultiRegionalCGE:
             iterations_used = iteration + 1
             if not np.any(active):
                 break
+        if self.solver_backend == "anderson":
+            self.last_anderson_diagnostics = accelerator.diagnostics
         goods_residual = float(np.max(goods_path_residual))
         factor_residual = float(np.max(factor_path_residual))
         if (
@@ -559,11 +916,24 @@ class DynamicMultiRegionalCGE:
         government_balance = tax_revenue - government_spending
         inflation = np.clip(price_index - 1.0, -0.10, 1.50)
         shadow_actor = self.shadow_price @ self.actor_gdp_weights.T
+        delivered_output = np.minimum(demand, self.output_ratio)
+        unmet_demand = demand - delivered_output
+        # Capacity rationing is an economic state, not an accounting error:
+        # desired demand = delivered output + unmet demand.
         accounting_residual = float(np.max(np.abs(
-            np.sum(self.output_ratio * self.out[None, :], axis=1)
-            - np.sum(demand * self.out[None, :], axis=1)
+            np.sum(
+                (demand - delivered_output - unmet_demand)
+                * self.out[None, :], axis=1
+            )
         ) / max(np.sum(self.out), 1e-9)))
+        unmet_demand_share = float(np.max(
+            np.sum(unmet_demand * self.out[None, :], axis=1)
+            / max(np.sum(self.out), 1e-9)
+        ))
         self.max_accounting_residual = max(self.max_accounting_residual, accounting_residual)
+        self.max_unmet_demand_share = max(
+            self.max_unmet_demand_share, unmet_demand_share
+        )
         self.max_external_account_residual = max(
             self.max_external_account_residual, external_residual
         )
@@ -590,8 +960,19 @@ class DynamicMultiRegionalCGE:
 class OpenEconomyDSGE:
     """Eight-economy bounded-expectations New-Keynesian open DSGE solver."""
 
-    def __init__(self, paths: int):
+    def __init__(
+        self, paths: int, econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
         self.paths = paths
+        draws = econometric_draws or {}
+        self.output_scale = np.asarray(
+            draws.get("macro_output_scale", np.ones(paths)), dtype=float
+        )
+        self.inflation_scale = np.asarray(
+            draws.get("macro_inflation_scale", np.ones(paths)), dtype=float
+        )
+        if self.output_scale.shape != (paths,) or self.inflation_scale.shape != (paths,):
+            raise ValueError("macro posterior draws must have shape (paths,)")
         self.n_actors = len(v44.ACTORS)
         self.output_gap = np.zeros((paths, self.n_actors))
         self.inflation = np.repeat(
@@ -617,14 +998,23 @@ class OpenEconomyDSGE:
         self.last_residual = np.inf
         self.last_solver_iterations = 0
         self.max_solver_iterations = 0
-        requested_solver = os.environ.get("TAIWAN_EQUILIBRIUM_SOLVER", "auto").lower()
+        requested_solver = os.environ.get(
+            "TAIWAN_DSGE_SOLVER",
+            os.environ.get("TAIWAN_EQUILIBRIUM_SOLVER", "auto"),
+        ).lower()
         self.jax_runtime = JaxResidentRuntime() if JAX_AVAILABLE else None
         gpu_jax = self.jax_runtime is not None and self.jax_runtime.platform == "gpu"
+        if requested_solver not in {"auto", "picard", "anderson", "newton_krylov"}:
+            raise ValueError(f"unsupported equilibrium solver {requested_solver!r}")
         self.solver_backend = (
             "jvp_newton_krylov" if requested_solver == "newton_krylov"
-            or (requested_solver == "auto" and gpu_jax) else "picard"
+            or (requested_solver == "auto" and gpu_jax) else
+            "anderson" if requested_solver == "anderson" else
+            "numba_picard" if requested_solver == "auto" and NUMBA_AVAILABLE
+            else "picard"
         )
         self.last_newton_diagnostics = None
+        self.last_anderson_diagnostics = None
         self.total_solve_seconds = 0.0
         self.household_mapping_seconds = 0.0
         self.solve_calls = 0
@@ -675,9 +1065,13 @@ class OpenEconomyDSGE:
         stress = expand4(finance_stress)
         fiscal = np.clip(expand4(fiscal_capacity, level=True), 0.05, 1.0)
         risk = expand4(war_risk)
+        risk *= self.output_scale[:, None]
         action = expand4(social_action)
         potential_gap = np.clip(cge_gdp - 1.0, -0.95, 0.30)
         imported_inflation = np.clip(cge_inflation, -0.10, 1.50)
+        imported_inflation = np.clip(
+            imported_inflation * self.inflation_scale[:, None], -0.10, 1.50
+        )
         y = self.output_gap.copy()
         pi = self.inflation.copy()
         rate = self.policy_rate.copy()
@@ -690,6 +1084,9 @@ class OpenEconomyDSGE:
         natural_rate = np.array([[0.012, 0.014, 0.020, 0.004, 0.015, 0.012, 0.018, 0.016]])
         target_pi = np.array([[0.020, 0.020, 0.020, 0.020, 0.020, 0.020, 0.025, 0.025]])
         path_iterations = np.zeros(self.paths, dtype=np.int32)
+        accelerator = PathwiseAnderson(
+            depth=3, damping=0.68, regularization=1.0e-8, trust_ratio=2.50
+        )
         iterations_used = 0
         if self.solver_backend == "jvp_newton_krylov":
             solution = solve_dsge_jvp(
@@ -723,6 +1120,26 @@ class OpenEconomyDSGE:
             path_residual = np.full(self.paths, solution.diagnostics.residual)
             path_iterations[:] = solution.diagnostics.iterations
             iterations_used = solution.diagnostics.iterations
+            max_iterations = 0
+        if self.solver_backend == "numba_picard":
+            (
+                y, pi, rate, exchange, investment, e_pi, e_y, premium,
+                real_rate_gap, path_residual, path_iterations,
+            ) = _solve_dsge_picard_compiled(
+                np.ascontiguousarray(y), np.ascontiguousarray(pi),
+                np.ascontiguousarray(rate), np.ascontiguousarray(exchange),
+                np.ascontiguousarray(investment), np.ascontiguousarray(e_pi),
+                np.ascontiguousarray(e_y), np.ascontiguousarray(stress),
+                np.ascontiguousarray(risk), np.ascontiguousarray(trade_balance),
+                np.ascontiguousarray(action), np.ascontiguousarray(fiscal),
+                np.ascontiguousarray(potential_gap),
+                np.ascontiguousarray(imported_inflation),
+                np.ascontiguousarray(natural_rate[0]),
+                np.ascontiguousarray(target_pi[0]),
+                np.ascontiguousarray(exchange_anchor), int(max_iterations),
+                float(tolerance),
+            )
+            iterations_used = int(np.max(path_iterations))
             max_iterations = 0
         for iteration in range(max_iterations):
             premium = np.clip(
@@ -768,16 +1185,38 @@ class OpenEconomyDSGE:
                 np.max(np.abs(e_y_new - e_y), axis=1),
             ), axis=1), axis=1)
             path_iterations[:] = iteration + 1
-            y = 0.30 * y + 0.70 * y_new
-            pi = 0.30 * pi + 0.70 * pi_new
-            rate = 0.35 * rate + 0.65 * rate_new
-            exchange = 0.40 * exchange + 0.60 * exchange_new
-            investment = 0.38 * investment + 0.62 * investment_new
-            e_pi = e_pi_new
-            e_y = e_y_new
+            if self.solver_backend == "anderson":
+                packed = np.concatenate(
+                    (y, pi, rate, exchange, investment, e_pi, e_y), axis=1
+                )
+                mapped = np.concatenate((
+                    y_new, pi_new, rate_new, exchange_new, investment_new,
+                    e_pi_new, e_y_new,
+                ), axis=1)
+                proposed = accelerator.step(packed, mapped)
+                y, pi, rate, exchange, investment, e_pi, e_y = np.split(
+                    proposed, 7, axis=1
+                )
+                y = np.clip(y, -1.2, 0.45)
+                pi = np.clip(pi, -0.10, 1.50)
+                rate = np.clip(rate, 0.0, 0.45)
+                exchange = np.clip(exchange, 0.35, 4.0)
+                investment = np.clip(investment, 0.08, 1.45)
+                e_pi = np.clip(e_pi, -0.10, 1.20)
+                e_y = np.clip(e_y, -1.0, 0.40)
+            else:
+                y = 0.30 * y + 0.70 * y_new
+                pi = 0.30 * pi + 0.70 * pi_new
+                rate = 0.35 * rate + 0.65 * rate_new
+                exchange = 0.40 * exchange + 0.60 * exchange_new
+                investment = 0.38 * investment + 0.62 * investment_new
+                e_pi = e_pi_new
+                e_y = e_y_new
             iterations_used = iteration + 1
             if float(np.max(path_residual)) < tolerance:
                 break
+        if self.solver_backend == "anderson":
+            self.last_anderson_diagnostics = accelerator.diagnostics
         residual = float(np.max(path_residual))
         self.last_solver_iterations = iterations_used
         self.max_solver_iterations = max(self.max_solver_iterations, iterations_used)
@@ -833,9 +1272,12 @@ class OpenEconomyDSGE:
 class CoupledMacroEconomicSystem:
     """Monthly CGE-DSGE fixed point with lagged finance and current war states."""
 
-    def __init__(self, paths: int, seed: int, scenario: str):
-        self.cge = DynamicMultiRegionalCGE(paths, seed, scenario)
-        self.dsge = OpenEconomyDSGE(paths)
+    def __init__(
+        self, paths: int, seed: int, scenario: str,
+        econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
+        self.cge = DynamicMultiRegionalCGE(paths, seed, scenario, econometric_draws)
+        self.dsge = OpenEconomyDSGE(paths, econometric_draws)
         self.paths = paths
         self.current_factors = MacroFactors(
             gdp_factor=np.ones((paths, 4)), industry_factor=np.ones((paths, 4)),
@@ -857,6 +1299,7 @@ class CoupledMacroEconomicSystem:
         self.max_dsge_solver_residual = 0.0
         self.last_outer_iterations = 0
         self.max_outer_iterations_used = 0
+        self.last_outer_anderson_diagnostics = None
 
     def current(self) -> MacroFactors:
         return self.current_factors
@@ -878,6 +1321,9 @@ class CoupledMacroEconomicSystem:
         cge_result = None
         dsge_result = None
         active = np.ones(self.paths, dtype=bool)
+        outer_accelerator = PathwiseAnderson(
+            depth=3, damping=0.65, regularization=1.0e-8, trust_ratio=2.25
+        )
         path_outer_residual = np.full(self.paths, np.inf)
         outer_iterations = 0
         for iteration in range(max_outer_iterations):
@@ -925,9 +1371,30 @@ class CoupledMacroEconomicSystem:
             previous = np.where(
                 active[:, None], cge_result.gdp_factor[:, :4], previous
             )
-            fd = np.where(active[:, None], 0.35 * fd + 0.65 * new_fd, fd)
-            inv = np.where(active[:, None], 0.35 * inv + 0.65 * new_inv, inv)
+            if (
+                self.cge.solver_backend == "anderson"
+                and self.dsge.solver_backend == "anderson"
+            ):
+                packed = np.concatenate((fd, inv), axis=1)
+                mapped = np.concatenate((new_fd, new_inv), axis=1)
+                mapped = np.where(active[:, None], mapped, packed)
+                proposed = outer_accelerator.step(packed, mapped)
+                fd_next, inv_next = np.split(proposed, 2, axis=1)
+                fd = np.where(
+                    active[:, None], np.clip(fd_next, 0.20, 1.30), fd
+                )
+                inv = np.where(
+                    active[:, None], np.clip(inv_next, 0.10, 1.40), inv
+                )
+            else:
+                fd = np.where(active[:, None], 0.35 * fd + 0.65 * new_fd, fd)
+                inv = np.where(active[:, None], 0.35 * inv + 0.65 * new_inv, inv)
             active &= ~converged_now
+        if (
+            self.cge.solver_backend == "anderson"
+            and self.dsge.solver_backend == "anderson"
+        ):
+            self.last_outer_anderson_diagnostics = outer_accelerator.diagnostics
         self.last_outer_iterations = outer_iterations
         self.max_outer_iterations_used = max(
             self.max_outer_iterations_used, outer_iterations
@@ -1016,12 +1483,31 @@ class CoupledMacroEconomicSystem:
             "max_cge_solver_residual": self.max_cge_solver_residual,
             "max_dsge_solver_residual": self.max_dsge_solver_residual,
             "max_cge_accounting_residual": self.cge.max_accounting_residual,
+            "max_cge_unmet_demand_share": self.cge.max_unmet_demand_share,
             "max_cge_external_account_residual": self.cge.max_external_account_residual,
             "last_cge_goods_residual": self.cge.last_goods_residual,
             "last_cge_factor_residual": self.cge.last_factor_residual,
             "last_dsge_residual": self.dsge.last_residual,
+            "econometric_draw_ranges": {
+                "trade_shock_scale": [
+                    float(np.min(self.cge.trade_shock_scale)),
+                    float(np.max(self.cge.trade_shock_scale)),
+                ],
+                "macro_output_scale": [
+                    float(np.min(self.dsge.output_scale)),
+                    float(np.max(self.dsge.output_scale)),
+                ],
+                "macro_inflation_scale": [
+                    float(np.min(self.dsge.inflation_scale)),
+                    float(np.max(self.dsge.inflation_scale)),
+                ],
+            },
             "last_outer_iterations": self.last_outer_iterations,
             "max_outer_iterations_used": self.max_outer_iterations_used,
+            "outer_anderson_diagnostics": (
+                self.last_outer_anderson_diagnostics.__dict__
+                if self.last_outer_anderson_diagnostics is not None else None
+            ),
             "last_cge_solver_iterations": self.cge.last_solver_iterations,
             "max_cge_solver_iterations": self.cge.max_solver_iterations,
             "last_dsge_solver_iterations": self.dsge.last_solver_iterations,
@@ -1035,6 +1521,14 @@ class CoupledMacroEconomicSystem:
             "dsge_newton_diagnostics": (
                 self.dsge.last_newton_diagnostics.__dict__
                 if self.dsge.last_newton_diagnostics is not None else None
+            ),
+            "cge_anderson_diagnostics": (
+                self.cge.last_anderson_diagnostics.__dict__
+                if self.cge.last_anderson_diagnostics is not None else None
+            ),
+            "dsge_anderson_diagnostics": (
+                self.dsge.last_anderson_diagnostics.__dict__
+                if self.dsge.last_anderson_diagnostics is not None else None
             ),
             "cge_jax_runtime": (
                 self.cge.jax_runtime.diagnostics() if self.cge.jax_runtime else None

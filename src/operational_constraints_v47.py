@@ -29,10 +29,11 @@ class DynamicOperationalConstraintSystem:
 
     def __init__(
         self, paths: int, seed: int, terrain: dict,
-        geometry_enabled: bool = False,
+        geometry_enabled: bool = False, advanced_geometry: bool = False,
     ):
         self.paths = paths
         self.geometry_enabled = bool(geometry_enabled)
+        self.advanced_geometry = bool(advanced_geometry)
         self.rng = np.random.default_rng(seed)
         mountain = float(terrain["land_share_above_500m"])
         sky = float(terrain["sky_view_proxy_p10_p50_p90"][1])
@@ -102,6 +103,82 @@ class DynamicOperationalConstraintSystem:
         self.last_finsler_reachability = np.ones((paths, 4))
         self.max_uot_solver_residual = 0.0
         self.max_uot_iterations_used = 0
+        self.month = 0
+        self.max_randers_norm = 0.0
+        self.minimum_subriemannian_reachability = 1.0
+        self.max_rotation_orthogonality_residual = 0.0
+        self.max_rotation_determinant_residual = 0.0
+
+    @staticmethod
+    def _rodrigues_z(angle: np.ndarray) -> np.ndarray:
+        """Batched SO(3) exponential for aggregate heading changes."""
+        cosine = np.cos(angle)
+        sine = np.sin(angle)
+        rotation = np.zeros(angle.shape + (3, 3))
+        rotation[..., 0, 0] = cosine
+        rotation[..., 0, 1] = -sine
+        rotation[..., 1, 0] = sine
+        rotation[..., 1, 1] = cosine
+        rotation[..., 2, 2] = 1.0
+        return rotation
+
+    def _advanced_finsler_cost(
+        self, interdiction: np.ndarray, command: np.ndarray,
+        pnt: np.ndarray, damage: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Time-varying Randers cost and sub-Riemannian turn reachability.
+
+        The three nodes are front, transit and depth aggregates of the GIS
+        corridor graph. Hard capacity remains owned by the network-flow step.
+        """
+        base_length = np.array([
+            [0.0, 1.15, 2.95],
+            [0.92, 0.0, 1.18],
+            [2.48, 0.88, 0.0],
+        ])[None, None, :, :]
+        slope_metric = np.array([
+            [1.0, 1.18, 1.38], [1.10, 1.0, 1.22], [1.30, 1.12, 1.0]
+        ])[None, None, :, :]
+        threat = (
+            0.78 * interdiction + 0.42 * damage + 0.34 * (1.0 - command)
+            + 0.30 * (1.0 - pnt)
+        )[:, :, None, None]
+        weather_cycle = 0.08 * (1.0 + np.sin(2.0 * np.pi * self.month / 12.0))
+        direction = np.array([
+            [0.0, 0.10, 0.22], [-0.08, 0.0, 0.09], [-0.18, -0.07, 0.0]
+        ])[None, None, :, :]
+        randers_norm = np.abs(direction) / np.maximum(slope_metric, 1.0e-12)
+        self.max_randers_norm = max(self.max_randers_norm, float(np.max(randers_norm)))
+        symmetric = base_length * np.sqrt(slope_metric) * (
+            1.0 + threat + weather_cycle
+        )
+        cost = np.maximum(symmetric + base_length * direction, 0.0)
+        diagonal = np.arange(3)
+        cost[..., diagonal, diagonal] = 0.0
+
+        turn_demand = np.array([0.46, 0.72, 0.38])[None, None, :]
+        angular_authority = np.clip(
+            0.30 + 0.38 * command + 0.22 * pnt - 0.16 * damage,
+            0.08, 0.96,
+        )
+        sub_reach = np.exp(
+            -turn_demand * np.maximum(1.0 / angular_authority[:, :, None] - 1.0, 0.0)
+        )
+        self.minimum_subriemannian_reachability = min(
+            self.minimum_subriemannian_reachability, float(np.min(sub_reach))
+        )
+        angle = 0.18 * angular_authority * (1.0 - 0.45 * interdiction)
+        rotation = self._rodrigues_z(angle)
+        identity = np.eye(3)[None, None, :, :]
+        self.max_rotation_orthogonality_residual = max(
+            self.max_rotation_orthogonality_residual,
+            float(np.max(np.abs(np.swapaxes(rotation, -1, -2) @ rotation - identity))),
+        )
+        self.max_rotation_determinant_residual = max(
+            self.max_rotation_determinant_residual,
+            float(np.max(np.abs(np.linalg.det(rotation) - 1.0))),
+        )
+        return cost, sub_reach
 
     def current(self) -> OperationalFactors:
         front = np.clip(self.inventory[:, :, 0, :], 0.01, 1.35)
@@ -191,16 +268,22 @@ class DynamicOperationalConstraintSystem:
         if self.geometry_enabled:
             # The directed cost is Finsler-like: depth-to-front movement is
             # more expensive than adjacent movement and reverse evacuation.
-            base_cost = np.array([
-                [0.0, 1.30, 3.20],
-                [1.00, 0.0, 1.25],
-                [2.80, 1.00, 0.0],
-            ])[None, None, :, :]
-            dynamic_penalty = (
-                1.0 + 0.72 * interdiction + 0.36 * (1.0 - command)
-                + 0.28 * (1.0 - pnt)
-            )[:, :, None, None]
-            finsler_cost = base_cost * dynamic_penalty
+            if self.advanced_geometry:
+                finsler_cost, sub_reach = self._advanced_finsler_cost(
+                    interdiction, command, pnt, damage
+                )
+            else:
+                base_cost = np.array([
+                    [0.0, 1.30, 3.20],
+                    [1.00, 0.0, 1.25],
+                    [2.80, 1.00, 0.0],
+                ])[None, None, :, :]
+                dynamic_penalty = (
+                    1.0 + 0.72 * interdiction + 0.36 * (1.0 - command)
+                    + 0.28 * (1.0 - pnt)
+                )[:, :, None, None]
+                finsler_cost = base_cost * dynamic_penalty
+                sub_reach = np.ones((self.paths, 4, 3))
             supply_density = np.sum(self.inventory, axis=3)
             total_mass = np.sum(supply_density, axis=2, keepdims=True)
             target_weights = np.array([0.52, 0.30, 0.18])[None, None, :]
@@ -210,7 +293,10 @@ class DynamicOperationalConstraintSystem:
             )
             plan_mass = np.maximum(np.sum(plan, axis=(2, 3)), 1.0e-12)
             transport_cost = np.sum(plan * finsler_cost, axis=(2, 3)) / plan_mass
-            reachability = np.clip(np.exp(-0.42 * transport_cost), 0.18, 1.0)
+            reachability = np.clip(
+                np.exp(-0.42 * transport_cost) * np.mean(sub_reach, axis=2),
+                0.12 if self.advanced_geometry else 0.18, 1.0,
+            )
             front_share = np.sum(plan[..., 0], axis=2) / plan_mass
             front_priority = np.clip(0.72 + 0.86 * front_share, 0.70, 1.18)
             corridor *= (0.72 + 0.28 * reachability[:, :, None])
@@ -299,6 +385,7 @@ class DynamicOperationalConstraintSystem:
         )))
         self.max_stock_residual = max(self.max_stock_residual, stock_residual)
         self.last_flow_residual = flow_residual
+        self.month += 1
         return self.current()
 
     def diagnostics(self) -> dict:
@@ -310,10 +397,15 @@ class DynamicOperationalConstraintSystem:
             "selected_facilities": list(self.selected_facilities),
             "robust_minimum_coverage": float(np.min(self.facility_coverage)),
             "geometry_enabled": self.geometry_enabled,
+            "advanced_geometry": self.advanced_geometry,
             "max_uot_solver_residual": self.max_uot_solver_residual,
             "max_uot_iterations_used": self.max_uot_iterations_used,
             "mean_unbalanced_transport_cost": float(np.mean(self.last_transport_cost)),
             "minimum_finsler_reachability": float(np.min(self.last_finsler_reachability)),
+            "max_randers_one_form_norm": self.max_randers_norm,
+            "minimum_subriemannian_reachability": self.minimum_subriemannian_reachability,
+            "max_so3_orthogonality_residual": self.max_rotation_orthogonality_residual,
+            "max_so3_determinant_residual": self.max_rotation_determinant_residual,
         }
 
 
@@ -329,9 +421,20 @@ class PNTFactors:
 class DynamicGeospatialPNTSystem:
     """Information-matrix fusion of GNSS, inertial, terrestrial, and terrain PNT."""
 
-    def __init__(self, paths: int, terrain: dict, geometry_enabled: bool = False):
+    def __init__(
+        self, paths: int, terrain: dict, geometry_enabled: bool = False,
+        geometry_metric: str = "affine_invariant", joseph_update: bool = False,
+        adaptive_bures_enabled: bool = False,
+        bures_barycenter_enabled: bool = False,
+    ):
         self.paths = paths
         self.geometry_enabled = bool(geometry_enabled)
+        if geometry_metric not in {"affine_invariant", "bures_wasserstein"}:
+            raise ValueError("unsupported SPD geometry metric")
+        self.geometry_metric = geometry_metric
+        self.joseph_update = bool(joseph_update)
+        self.adaptive_bures_enabled = bool(adaptive_bures_enabled)
+        self.bures_barycenter_enabled = bool(bures_barycenter_enabled)
         self.sky = float(terrain["sky_view_proxy_p10_p50_p90"][1])
         self.covariance = np.repeat(
             np.diag([1.0, 1.0, 1.8])[None, None, :, :], paths * 4, axis=0
@@ -340,6 +443,15 @@ class DynamicGeospatialPNTSystem:
         self.last_information_residual = 0.0
         self.max_spd_geodesic_distance = 0.0
         self.minimum_covariance_eigenvalue = 1.0
+        self.max_bures_wasserstein_distance = 0.0
+        self.max_joseph_symmetry_residual = 0.0
+        self.max_barycenter_residual = 0.0
+        self.max_barycenter_iterations = 0
+        self.max_source_weight_residual = 0.0
+        self.minimum_source_weight = 1.0
+        self.minimum_adaptive_weight = 1.0
+        self.maximum_adaptive_weight = 0.0
+        self.maximum_source_dispersion = 0.0
 
     @staticmethod
     def _matrix_power_spd(matrix: np.ndarray, power: float) -> np.ndarray:
@@ -363,6 +475,62 @@ class DynamicGeospatialPNTSystem:
         distance = float(np.max(np.sqrt(np.sum(np.log(eigenvalue) ** 2, axis=-1))))
         return 0.5 * (mixed + np.swapaxes(mixed, -1, -2)), distance
 
+    @classmethod
+    def _bures_wasserstein_geodesic(
+        cls, opening: np.ndarray, target: np.ndarray, weight: float,
+    ) -> tuple[np.ndarray, float]:
+        root = cls._matrix_power_spd(opening, 0.5)
+        inverse_root = cls._matrix_power_spd(opening, -0.5)
+        middle = root @ target @ root
+        middle_root = cls._matrix_power_spd(middle, 0.5)
+        transport = inverse_root @ middle_root @ inverse_root
+        identity = np.eye(opening.shape[-1])
+        interpolation = (1.0 - weight) * identity + weight * transport
+        mixed = interpolation @ opening @ interpolation
+        trace_term = np.trace(opening, axis1=-2, axis2=-1) + np.trace(
+            target, axis1=-2, axis2=-1
+        ) - 2.0 * np.trace(middle_root, axis1=-2, axis2=-1)
+        distance = float(np.max(np.sqrt(np.maximum(trace_term, 0.0))))
+        return 0.5 * (mixed + np.swapaxes(mixed, -1, -2)), distance
+
+    @classmethod
+    def _bures_distance(cls, opening: np.ndarray, target: np.ndarray) -> np.ndarray:
+        root = cls._matrix_power_spd(opening, 0.5)
+        middle_root = cls._matrix_power_spd(root @ target @ root, 0.5)
+        trace_term = (
+            np.trace(opening, axis1=-2, axis2=-1)
+            + np.trace(target, axis1=-2, axis2=-1)
+            - 2.0 * np.trace(middle_root, axis1=-2, axis2=-1)
+        )
+        return np.sqrt(np.maximum(trace_term, 0.0))
+
+    @classmethod
+    def _bures_barycenter(
+        cls, covariance: np.ndarray, weights: np.ndarray,
+        maximum_iterations: int = 12, tolerance: float = 1.0e-9,
+    ) -> tuple[np.ndarray, float, int]:
+        """Fixed point Bures barycenter for [..., source, dimension, dimension]."""
+        weights = weights / np.maximum(np.sum(weights, axis=-1, keepdims=True), 1.0e-15)
+        estimate = np.sum(weights[..., None, None] * covariance, axis=-3)
+        residual = np.inf
+        used = 0
+        for iteration in range(maximum_iterations):
+            root = cls._matrix_power_spd(estimate, 0.5)
+            inverse_root = cls._matrix_power_spd(estimate, -0.5)
+            middle = root[..., None, :, :] @ covariance @ root[..., None, :, :]
+            mean_root = np.sum(
+                weights[..., None, None] * cls._matrix_power_spd(middle, 0.5),
+                axis=-3,
+            )
+            updated = inverse_root @ mean_root @ mean_root @ inverse_root
+            updated = 0.5 * (updated + np.swapaxes(updated, -1, -2))
+            residual = float(np.max(cls._bures_distance(estimate, updated)))
+            estimate = updated
+            used = iteration + 1
+            if residual <= tolerance:
+                break
+        return estimate, residual, used
+
     def update(
         self, *, infrastructure: np.ndarray, cyber_damage: np.ndarray,
         command: np.ndarray, terrain_mask: np.ndarray | float,
@@ -381,18 +549,133 @@ class DynamicGeospatialPNTSystem:
         precision[..., 1, 1] = 0.70 * gnss + 0.42 * terrestrial + 0.24 * inertial
         precision[..., 2, 2] = 0.42 * gnss + 0.34 * terrain + 0.30 * inertial
         precision[..., 0, 1] = precision[..., 1, 0] = 0.04 * terrestrial
+        measurement_covariance = np.linalg.inv(
+            precision + 1.0e-12 * np.eye(3)[None, None, :, :]
+        )
+        source_dispersion = np.zeros((self.paths, 4))
+        if self.bures_barycenter_enabled:
+            source_precision = np.zeros((self.paths, 4, 4, 3, 3))
+            source_precision[..., 0, 0, 0] = 0.70 * gnss
+            source_precision[..., 0, 1, 1] = 0.70 * gnss
+            source_precision[..., 0, 2, 2] = 0.42 * gnss
+            source_precision[..., 1, 0, 0] = 0.24 * inertial
+            source_precision[..., 1, 1, 1] = 0.24 * inertial
+            source_precision[..., 1, 2, 2] = 0.30 * inertial
+            source_precision[..., 2, 0, 0] = 0.42 * terrestrial
+            source_precision[..., 2, 1, 1] = 0.42 * terrestrial
+            source_precision[..., 2, 2, 2] = 0.08 * terrestrial
+            source_precision[..., 2, 0, 1] = 0.04 * terrestrial
+            source_precision[..., 2, 1, 0] = 0.04 * terrestrial
+            source_precision[..., 3, 0, 0] = 0.10 * terrain
+            source_precision[..., 3, 1, 1] = 0.10 * terrain
+            source_precision[..., 3, 2, 2] = 0.34 * terrain
+            source_precision += 0.015 * np.eye(3)[None, None, None, :, :]
+            source_covariance = np.linalg.inv(source_precision)
+            source_strength = np.stack((gnss, inertial, terrestrial, terrain), axis=-1)
+            source_weights = source_strength / np.maximum(
+                np.sum(source_strength, axis=-1, keepdims=True), 1.0e-15
+            )
+            barycenter, barycenter_residual, barycenter_iterations = self._bures_barycenter(
+                source_covariance, source_weights
+            )
+            effective_count = np.sum(source_strength, axis=-1) / np.maximum(
+                np.max(source_strength, axis=-1), 1.0e-12
+            )
+            measurement_covariance = barycenter / np.maximum(
+                effective_count[..., None, None], 1.0
+            )
+            precision = np.linalg.inv(measurement_covariance)
+            distances = np.stack([
+                self._bures_distance(barycenter, source_covariance[..., source, :, :])
+                for source in range(4)
+            ], axis=-1)
+            source_dispersion = np.sum(source_weights * distances, axis=-1)
+            self.max_barycenter_residual = max(
+                self.max_barycenter_residual, barycenter_residual
+            )
+            self.max_barycenter_iterations = max(
+                self.max_barycenter_iterations, barycenter_iterations
+            )
+            self.max_source_weight_residual = max(
+                self.max_source_weight_residual,
+                float(np.max(np.abs(np.sum(source_weights, axis=-1) - 1.0))),
+            )
+            self.minimum_source_weight = min(
+                self.minimum_source_weight, float(np.min(source_weights))
+            )
+            self.maximum_source_dispersion = max(
+                self.maximum_source_dispersion, float(np.max(source_dispersion))
+            )
         prior_precision = np.linalg.inv(self.covariance)
         posterior_precision = prior_precision + precision
-        posterior = np.linalg.inv(posterior_precision)
+        if self.joseph_update:
+            gain = self.covariance @ np.linalg.inv(
+                self.covariance + measurement_covariance
+            )
+            identity = np.eye(3)[None, None, :, :]
+            left = identity - gain
+            posterior = (
+                left @ self.covariance @ np.swapaxes(left, -1, -2)
+                + gain @ measurement_covariance @ np.swapaxes(gain, -1, -2)
+            )
+            self.max_joseph_symmetry_residual = max(
+                self.max_joseph_symmetry_residual,
+                float(np.max(np.abs(posterior - np.swapaxes(posterior, -1, -2)))),
+            )
+        else:
+            posterior = np.linalg.inv(posterior_precision)
         process_noise = np.zeros_like(posterior)
         process_noise[..., 0, 0] = 0.025 + 0.12 * cyber
         process_noise[..., 1, 1] = 0.025 + 0.12 * cyber
         process_noise[..., 2, 2] = 0.040 + 0.15 * cyber
         target_covariance = posterior + process_noise
         if self.geometry_enabled:
-            self.covariance, distance = self._affine_invariant_geodesic(
-                self.covariance, target_covariance, 0.88
-            )
+            if self.geometry_metric == "bures_wasserstein":
+                weight = 0.88
+                if self.adaptive_bures_enabled:
+                    innovation_distance = self._bures_distance(
+                        self.covariance, target_covariance
+                    )
+                    weight_field = np.clip(
+                        0.94 / (
+                            1.0 + 0.34 * source_dispersion
+                            + 0.48 * innovation_distance + 0.55 * cyber
+                        ),
+                        0.32, 0.94,
+                    )
+                    # A scalar per batch is supported by the matrix geodesic.
+                    root = self._matrix_power_spd(self.covariance, 0.5)
+                    inverse_root = self._matrix_power_spd(self.covariance, -0.5)
+                    middle_root = self._matrix_power_spd(
+                        root @ target_covariance @ root, 0.5
+                    )
+                    transport = inverse_root @ middle_root @ inverse_root
+                    identity = np.eye(3)[None, None, :, :]
+                    interpolation = identity + weight_field[..., None, None] * (
+                        transport - identity
+                    )
+                    self.covariance = interpolation @ self.covariance @ interpolation
+                    self.covariance = 0.5 * (
+                        self.covariance + np.swapaxes(self.covariance, -1, -2)
+                    )
+                    distance = float(np.max(innovation_distance))
+                    self.minimum_adaptive_weight = min(
+                        self.minimum_adaptive_weight, float(np.min(weight_field))
+                    )
+                    self.maximum_adaptive_weight = max(
+                        self.maximum_adaptive_weight, float(np.max(weight_field))
+                    )
+                else:
+                    self.covariance, distance = self._bures_wasserstein_geodesic(
+                        self.covariance, target_covariance, weight
+                    )
+                self.max_bures_wasserstein_distance = max(
+                    self.max_bures_wasserstein_distance, distance
+                )
+            else:
+                self.covariance, distance = self._affine_invariant_geodesic(
+                    self.covariance, target_covariance, 0.88
+                )
             self.max_spd_geodesic_distance = max(
                 self.max_spd_geodesic_distance, distance
             )
@@ -427,6 +710,19 @@ class DynamicGeospatialPNTSystem:
             "minimum_integrity": float(np.min(self.integrity)),
             "maximum_covariance": float(np.max(self.covariance)),
             "geometry_enabled": self.geometry_enabled,
+            "geometry_metric": self.geometry_metric,
+            "joseph_update": self.joseph_update,
             "max_spd_geodesic_distance": self.max_spd_geodesic_distance,
             "minimum_covariance_eigenvalue": self.minimum_covariance_eigenvalue,
+            "max_bures_wasserstein_distance": self.max_bures_wasserstein_distance,
+            "max_joseph_symmetry_residual": self.max_joseph_symmetry_residual,
+            "adaptive_bures_enabled": self.adaptive_bures_enabled,
+            "bures_barycenter_enabled": self.bures_barycenter_enabled,
+            "max_barycenter_residual": self.max_barycenter_residual,
+            "max_barycenter_iterations": self.max_barycenter_iterations,
+            "max_source_weight_residual": self.max_source_weight_residual,
+            "minimum_source_weight": self.minimum_source_weight,
+            "minimum_adaptive_weight": self.minimum_adaptive_weight,
+            "maximum_adaptive_weight": self.maximum_adaptive_weight,
+            "maximum_source_dispersion": self.maximum_source_dispersion,
         }

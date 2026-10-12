@@ -1,0 +1,363 @@
+{
+  "model_version": "V6.7-LD",
+  "classification": "pre-registered structural integration ablation; 16 paths, 60 months, one complete-model cell; not a published probability estimate",
+  "common_random_numbers": true,
+  "paths": 16,
+  "months": 60,
+  "case": "taiwan_alone",
+  "trade_scenario": "和平基线",
+  "variants": {
+    "ordinary_target_sampling": {
+      "conditional_rows": [
+        {
+          "conflict_year": "pathwise_2026_2100",
+          "horizon_years": 5,
+          "case": "taiwan_alone",
+          "trade_scenario": "baseline",
+          "conditional_broad_control_rate": 0.0,
+          "kernel_uncertainty_low_rate": 0.0,
+          "kernel_uncertainty_mid_rate": 0.0,
+          "kernel_uncertainty_high_rate": 0.0,
+          "importance_sampling_effective_sample_size": 16.0,
+          "mechanical_majority_control_share": 0.0,
+          "status_quo_settlement_share": 0.0,
+          "unification_settlement_share": 0.0
+        }
+      ],
+      "aggregate": [
+        {
+          "trade_scenario": "baseline",
+          "horizon_years": 5,
+          "conditional_mean": 0.0,
+          "conditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "unconditional_mean": 0.0,
+          "unconditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "large_deviation": {
+        "model_version": "V6.7-LD",
+        "months": 60,
+        "path_conditioned": true,
+        "defensive_mixture_importance_sampling": true,
+        "exact_mixture_likelihood_ratio": true,
+        "asymptotic_action_not_used_as_probability": true,
+        "action_ledger_enabled": true,
+        "same_path_bidirectional_feedback": true,
+        "common_noise_conditioned": true,
+        "future_information_used": false,
+        "max_causal_clock_violation": 0.0,
+        "max_likelihood_identity_residual": 1.1102230246251565e-16,
+        "sample_likelihood_normalization_residual": 0.0,
+        "effective_sample_size": 16.0,
+        "effective_sample_size_ratio": 1.0,
+        "max_empirical_measure_mass_residual": 0.0,
+        "mode_counts": {
+          "baseline": 14,
+          "china_system_stress": 1,
+          "defender_system_stress": 0,
+          "alliance_system_stress": 0,
+          "common_network_cascade": 0,
+          "joint_extreme": 1
+        },
+        "rare_set_hit_share": {
+          "joint_logistics_collapse": 1.0,
+          "multi_domain_command_failure": 0.125,
+          "economic_political_crisis": 0.0,
+          "leadership_disruption": 0.0
+        },
+        "minimum_empirical_action_on_hit": [
+          84.61336024054701,
+          97.111682781885,
+          null,
+          null
+        ],
+        "mean_continuous_action": 81.37839066802803,
+        "mean_jump_action": 12.690231717487332,
+        "mean_field_empirical_action": 8.330769097525199,
+        "jump_event_counts": [
+          10,
+          8,
+          6,
+          1,
+          9,
+          0
+        ]
+      },
+      "runtime_validation": "TAIWAN_V51_RUNTIME_VALIDATION: PASS"
+    },
+    "single_joint_extreme_tilt": {
+      "conditional_rows": [
+        {
+          "conflict_year": "pathwise_2026_2100",
+          "horizon_years": 5,
+          "case": "taiwan_alone",
+          "trade_scenario": "baseline",
+          "conditional_broad_control_rate": 0.0,
+          "kernel_uncertainty_low_rate": 0.0,
+          "kernel_uncertainty_mid_rate": 0.0,
+          "kernel_uncertainty_high_rate": 0.0,
+          "importance_sampling_effective_sample_size": 9.82820380854349,
+          "mechanical_majority_control_share": 0.0,
+          "status_quo_settlement_share": 0.0,
+          "unification_settlement_share": 0.0
+        }
+      ],
+      "aggregate": [
+        {
+          "trade_scenario": "baseline",
+          "horizon_years": 5,
+          "conditional_mean": 0.0,
+          "conditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "unconditional_mean": 0.0,
+          "unconditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "large_deviation": {
+        "model_version": "V6.7-LD",
+        "months": 60,
+        "path_conditioned": true,
+        "defensive_mixture_importance_sampling": true,
+        "exact_mixture_likelihood_ratio": true,
+        "asymptotic_action_not_used_as_probability": true,
+        "action_ledger_enabled": true,
+        "same_path_bidirectional_feedback": true,
+        "common_noise_conditioned": true,
+        "future_information_used": false,
+        "max_causal_clock_violation": 0.0,
+        "max_likelihood_identity_residual": 1.1102230246251565e-16,
+        "sample_likelihood_normalization_residual": 0.034375000000000266,
+        "effective_sample_size": 9.82820380854349,
+        "effective_sample_size_ratio": 0.6142627380339681,
+        "max_empirical_measure_mass_residual": 0.0,
+        "mode_counts": {
+          "baseline": 6,
+          "china_system_stress": 0,
+          "defender_system_stress": 4,
+          "alliance_system_stress": 4,
+          "common_network_cascade": 1,
+          "joint_extreme": 1
+        },
+        "rare_set_hit_share": {
+          "joint_logistics_collapse": 1.0,
+          "multi_domain_command_failure": 0.125,
+          "economic_political_crisis": 0.0,
+          "leadership_disruption": 0.0
+        },
+        "minimum_empirical_action_on_hit": [
+          84.61034551692852,
+          97.2986020901244,
+          null,
+          null
+        ],
+        "mean_continuous_action": 81.38128939620961,
+        "mean_jump_action": 15.225576108750762,
+        "mean_field_empirical_action": 8.330769097525199,
+        "jump_event_counts": [
+          11,
+          8,
+          8,
+          1,
+          14,
+          0
+        ]
+      },
+      "runtime_validation": "TAIWAN_V51_RUNTIME_VALIDATION: PASS"
+    },
+    "multimodal_defensive_proposal": {
+      "conditional_rows": [
+        {
+          "conflict_year": "pathwise_2026_2100",
+          "horizon_years": 5,
+          "case": "taiwan_alone",
+          "trade_scenario": "baseline",
+          "conditional_broad_control_rate": 0.0,
+          "kernel_uncertainty_low_rate": 0.0,
+          "kernel_uncertainty_mid_rate": 0.0,
+          "kernel_uncertainty_high_rate": 0.0,
+          "importance_sampling_effective_sample_size": 7.372091491740365,
+          "mechanical_majority_control_share": 0.0,
+          "status_quo_settlement_share": 0.0,
+          "unification_settlement_share": 0.0
+        }
+      ],
+      "aggregate": [
+        {
+          "trade_scenario": "baseline",
+          "horizon_years": 5,
+          "conditional_mean": 0.0,
+          "conditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "unconditional_mean": 0.0,
+          "unconditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "large_deviation": {
+        "model_version": "V6.7-LD",
+        "months": 60,
+        "path_conditioned": true,
+        "defensive_mixture_importance_sampling": true,
+        "exact_mixture_likelihood_ratio": true,
+        "asymptotic_action_not_used_as_probability": true,
+        "action_ledger_enabled": true,
+        "same_path_bidirectional_feedback": true,
+        "common_noise_conditioned": true,
+        "future_information_used": false,
+        "max_causal_clock_violation": 0.0,
+        "max_likelihood_identity_residual": 1.1102230246251565e-16,
+        "sample_likelihood_normalization_residual": 0.06968864468864444,
+        "effective_sample_size": 7.372091491740365,
+        "effective_sample_size_ratio": 0.4607557182337728,
+        "max_empirical_measure_mass_residual": 0.0,
+        "mode_counts": {
+          "baseline": 5,
+          "china_system_stress": 1,
+          "defender_system_stress": 4,
+          "alliance_system_stress": 4,
+          "common_network_cascade": 1,
+          "joint_extreme": 1
+        },
+        "rare_set_hit_share": {
+          "joint_logistics_collapse": 1.0,
+          "multi_domain_command_failure": 0.125,
+          "economic_political_crisis": 0.0,
+          "leadership_disruption": 0.0
+        },
+        "minimum_empirical_action_on_hit": [
+          84.61045341621181,
+          97.29858944508936,
+          null,
+          null
+        ],
+        "mean_continuous_action": 81.38146170068683,
+        "mean_jump_action": 16.027166712932768,
+        "mean_field_empirical_action": 8.330769097525199,
+        "jump_event_counts": [
+          11,
+          11,
+          8,
+          1,
+          14,
+          0
+        ]
+      },
+      "runtime_validation": "TAIWAN_V51_RUNTIME_VALIDATION: PASS"
+    },
+    "multimodal_without_action_ledger": {
+      "conditional_rows": [
+        {
+          "conflict_year": "pathwise_2026_2100",
+          "horizon_years": 5,
+          "case": "taiwan_alone",
+          "trade_scenario": "baseline",
+          "conditional_broad_control_rate": 0.0,
+          "kernel_uncertainty_low_rate": 0.0,
+          "kernel_uncertainty_mid_rate": 0.0,
+          "kernel_uncertainty_high_rate": 0.0,
+          "importance_sampling_effective_sample_size": 7.372091491740365,
+          "mechanical_majority_control_share": 0.0,
+          "status_quo_settlement_share": 0.0,
+          "unification_settlement_share": 0.0
+        }
+      ],
+      "aggregate": [
+        {
+          "trade_scenario": "baseline",
+          "horizon_years": 5,
+          "conditional_mean": 0.0,
+          "conditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "unconditional_mean": 0.0,
+          "unconditional_p10_p50_p90": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      ],
+      "large_deviation": {
+        "model_version": "V6.7-LD",
+        "months": 60,
+        "path_conditioned": true,
+        "defensive_mixture_importance_sampling": true,
+        "exact_mixture_likelihood_ratio": true,
+        "asymptotic_action_not_used_as_probability": true,
+        "action_ledger_enabled": false,
+        "same_path_bidirectional_feedback": true,
+        "common_noise_conditioned": true,
+        "future_information_used": false,
+        "max_causal_clock_violation": 0.0,
+        "max_likelihood_identity_residual": 1.1102230246251565e-16,
+        "sample_likelihood_normalization_residual": 0.06968864468864444,
+        "effective_sample_size": 7.372091491740365,
+        "effective_sample_size_ratio": 0.4607557182337728,
+        "max_empirical_measure_mass_residual": 0.0,
+        "mode_counts": {
+          "baseline": 5,
+          "china_system_stress": 1,
+          "defender_system_stress": 4,
+          "alliance_system_stress": 4,
+          "common_network_cascade": 1,
+          "joint_extreme": 1
+        },
+        "rare_set_hit_share": {
+          "joint_logistics_collapse": 0.0,
+          "multi_domain_command_failure": 0.0,
+          "economic_political_crisis": 0.0,
+          "leadership_disruption": 0.0
+        },
+        "minimum_empirical_action_on_hit": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "mean_continuous_action": 0.0,
+        "mean_jump_action": 0.0,
+        "mean_field_empirical_action": 0.0,
+        "jump_event_counts": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "runtime_validation": "TAIWAN_V51_RUNTIME_VALIDATION: PASS"
+    }
+  },
+  "checks": {
+    "all_runtime_validations_pass": true,
+    "ordinary_sampling_unit_weights": true,
+    "multimodal_ess_above_floor": true,
+    "action_ledger_is_read_only": true
+  },
+  "action_ledger_probability_difference": 0.0,
+  "status": "PASS"
+}

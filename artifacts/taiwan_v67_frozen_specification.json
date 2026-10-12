@@ -1,0 +1,55 @@
+{
+  "model_version": "V6.7-LD",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "V6.6 inherited accounting and equilibrium checks",
+      "likelihood normalization",
+      "importance ESS",
+      "action nonnegativity",
+      "empirical-measure mass",
+      "causality and rare-set first-hit accounting"
+    ],
+    "ablations": [
+      "ordinary target sampling",
+      "single-mode proposal",
+      "multimodal defensive proposal",
+      "action ledger read-only"
+    ],
+    "common_random_numbers": true
+  },
+  "hashes": {
+    "work\\information_geometry_v58.py": "15E8EDAB11FCA796EEABC6DDFB2340B75E02280CFD269A3A9E275D0C2BC8A1E4",
+    "work\\deep_optimal_transport_v66.py": "264D841C0A4D35917A1490D1CDCC523E7EA305820B9C3E36E0CF712F958A42EE",
+    "work\\continuous_multipop_mfg_v66.py": "D358EB485A3D0B74A21F8B28396B22E7E14A22D696E57D7228A3724E9B9543FE",
+    "work\\transport_symplectic_v66.py": "EF5C4598EA7D713B6DBD6C73616A5C03F0D628751772F1C1AE96561F00F56FDA",
+    "work\\large_deviation_v67.py": "03459003E030483258E17E9F94BD6C8237D34C2C5943DA2CEDB7CAE88D2134C0",
+    "work\\dynamic_macro_equilibrium_v47.py": "06B93E28A914DDC979DCBBD905FA366E228AFEB82CB15A86F58BE5486BF19260",
+    "work\\hybrid_filippov_impulse_v51.py": "5B7339F3E89A6D0599D88E80FDEECF10251A1F6B58A455CB1F0AE2AF14207BB8",
+    "work\\simulate_taiwan_multidomain_v42.py": "0A22C6962E63B5590EF10ECB51EA9A8F3AEF35AF94E13457E2F7F0CDA31FCD04",
+    "work\\simulate_taiwan_fully_closed_v47.py": "16C1494B5FDBD328C43AEC636A42231AAFE6D708933A41F8FE7EDA5B5B7ADBFC",
+    "work\\simulate_taiwan_fully_closed_v62.py": "C16834625C04FB3FC6DC5202D01A42CCBA3EFE462CB344CE209FF5BAD0558BC5",
+    "work\\simulate_taiwan_fully_closed_v64.py": "1364F843B8C6BE64378F2712850330BE3C15FADEA5A449ED74F0781444D5E261",
+    "work\\simulate_taiwan_fully_closed_v66.py": "A48E43427385D7E28813DADD75C7933BC5D1DA2887F43ED3A472EE676945F1EA",
+    "work\\simulate_taiwan_fully_closed_v67.py": "73B1540C35A7BE6439614A7EE732B07706C66D4682559115561921F7BA4F74A0",
+    "work\\simulate_taiwan_v67_checkpointed.py": "AB63F12C499FEBC6AC34E017625C6D6FC7268D125AA15102CE851507C2371801",
+    "work\\diagnostic_taiwan_v67.py": "B4DCB905C77D7522A0F770B00D320CDEA7AFBCE144EB2BD0E4B01D0BA6D1273B",
+    "work\\run_taiwan_v67_ablations.py": "447D435349CDC22D36C0E6F97F30C258B3B10A4886D697AABE6D719905C7E57C"
+  },
+  "auditor_sha256": "F89059534923D452C0017841AA6172AED469FF3D7824767F27EF3C7758FBC234",
+  "diagnostic_sha256": "947B866639C7960791CC63B7B9BD5EE9CF2BED3CA56129614EE773F515F0A9D0",
+  "ablation_sha256": "613FDC1906BC1F156B874BDE5EFF2DBCF317BA9270ACDDFA90EC34C37E3F45B9"
+}

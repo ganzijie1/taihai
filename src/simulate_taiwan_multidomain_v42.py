@@ -272,6 +272,12 @@ def initialize(rng, year, case, terrain, sipri):
         "actor_action": np.zeros((n, 4)),
         "actor_social_mobilization": np.zeros((n, 4)),
         "actor_social_fatigue": np.zeros((n, 4)),
+        "actor_social_labor_factor": np.ones((n, 4)),
+        "actor_social_logistics_factor": np.ones((n, 4)),
+        "actor_social_morale_factor": np.ones((n, 4)),
+        "actor_social_fiscal_drag": np.zeros((n, 4)),
+        "actor_social_war_continuation": np.full((n, 4), 0.65),
+        "actor_social_negotiation_pressure": np.full((n, 4), 0.35),
         "actor_firm_distress": np.clip(
             rng.normal(np.array([0.04, 0.05, 0.06, 0.08])[None, None, :], 0.012, (n, 4, 4)),
             0.01, 0.18,
@@ -347,20 +353,29 @@ def simulate_mechanisms(
     operations_system=None, pnt_system=None, strategy_system=None,
     spatial_system=None, mechanism_system=None, energy_system=None,
     geometry_system=None, hybrid_system=None, topology_system=None,
+    political_system=None, stochastic_geometry_system=None,
+    transport_symplectic_system=None, rare_event_system=None,
 ):
     scenario = SCENARIOS[scenario_key]
     cfg = CASE_CONFIG[case]
     s = initialize(rng, year, case, terrain, sipri)
     n = PATHS
-    tail_regime = rng.choice(len(TAIL_TARGET_PROB), n, p=TAIL_PROPOSAL_PROB)
-    importance_weight = TAIL_TARGET_PROB[tail_regime] / TAIL_PROPOSAL_PROB[tail_regime]
-    tail_actor_multiplier = np.ones((n, 4))
-    tail_actor_multiplier[tail_regime == 1, 0] = 3.2
-    tail_actor_multiplier[tail_regime == 2, 1] = 3.2
-    tail_actor_multiplier[tail_regime == 3, 2:] = 3.0
-    tail_actor_multiplier[tail_regime == 5, :] = 2.7
-    tail_common_multiplier = np.where(tail_regime == 4, 3.5, 1.0)
-    tail_common_multiplier = np.where(tail_regime == 5, 2.6, tail_common_multiplier)
+    if rare_event_system is None:
+        tail_regime = rng.choice(len(TAIL_TARGET_PROB), n, p=TAIL_PROPOSAL_PROB)
+        importance_weight = TAIL_TARGET_PROB[tail_regime] / TAIL_PROPOSAL_PROB[tail_regime]
+        tail_actor_multiplier = np.ones((n, 4))
+        tail_actor_multiplier[tail_regime == 1, 0] = 3.2
+        tail_actor_multiplier[tail_regime == 2, 1] = 3.2
+        tail_actor_multiplier[tail_regime == 3, 2:] = 3.0
+        tail_actor_multiplier[tail_regime == 5, :] = 2.7
+        tail_common_multiplier = np.where(tail_regime == 4, 3.5, 1.0)
+        tail_common_multiplier = np.where(tail_regime == 5, 2.6, tail_common_multiplier)
+    else:
+        proposal = rare_event_system.initialise_proposal()
+        tail_regime = proposal.mode
+        importance_weight = proposal.likelihood_ratio
+        tail_actor_multiplier = proposal.actor_jump_multiplier
+        tail_common_multiplier = proposal.common_jump_multiplier
     common_hawkes_memory = np.zeros(n)
     actor_hawkes_memory = np.zeros((n, 4))
     flags = {
@@ -379,6 +394,10 @@ def simulate_mechanisms(
         "geometric_multiscale_coupling": geometry_system is not None,
         "hybrid_filippov_impulse": hybrid_system is not None,
         "topological_dynamics": topology_system is not None,
+        "collective_action_regime_closure": political_system is not None,
+        "dynamic_stochastic_geometry": stochastic_geometry_system is not None,
+        "deep_transport_symplectic": transport_symplectic_system is not None,
+        "hybrid_large_deviation": rare_event_system is not None,
         "principal_agent": True,
     }
     if module_flags is not None:
@@ -500,6 +519,7 @@ def simulate_mechanisms(
                 0.35 * opening_shortage_def, 0.40 * opening_shortage_def,
             ))
             opening_logistics = np.mean(s["actor_front_rear_integrity"], axis=2)
+            opening_logistics *= s["actor_social_logistics_factor"]
             if energy_opening is not None:
                 opening_logistics *= energy_opening.logistics
             opening_command = (
@@ -630,7 +650,16 @@ def simulate_mechanisms(
         u_regime = rng.random(n)
         next_regime = regime.copy()
         high = regime == 0
-        negotiation_lag = np.mean(s["actor_strategy_controls"][:, :, 4], axis=1)
+        social_negotiation_lag = np.mean(
+            s["actor_social_negotiation_pressure"], axis=1
+        )
+        social_war_continuation = np.mean(
+            s["actor_social_war_continuation"], axis=1
+        )
+        negotiation_lag = np.clip(
+            np.mean(s["actor_strategy_controls"][:, :, 4], axis=1)
+            + 0.65 * social_negotiation_lag, 0.0, 1.0
+        )
         p_exit_high = np.where(
             duration >= 6,
             0.002 + 0.012 * exhaustion * stalemate + 0.008 * negotiation_lag,
@@ -647,6 +676,18 @@ def simulate_mechanisms(
         settlement_multiplier = (
             mechanism_factors.settlement_multiplier
             if mechanism_factors is not None else np.ones(n)
+        )
+        entry_multiplier = np.clip(
+            entry_multiplier * (0.78 + 0.52 * social_negotiation_lag),
+            0.25, 2.0,
+        )
+        break_multiplier = np.clip(
+            break_multiplier * (0.78 + 0.52 * social_war_continuation),
+            0.25, 2.0,
+        )
+        settlement_multiplier = np.clip(
+            settlement_multiplier * (0.80 + 0.45 * social_negotiation_lag),
+            0.25, 2.0,
         )
         p_exit_high = np.clip(p_exit_high * entry_multiplier, 0.0, 0.20)
         next_regime[high & (u_regime < 0.70 * p_exit_high)] = 1
@@ -787,6 +828,18 @@ def simulate_mechanisms(
         leader_disruption = leader_attempt & (
             rng.random((n, 4)) > intercept_probability
         )
+        if rare_event_system is not None:
+            rare_event_system.record_jumps(
+                events=(
+                    common, cn_event, def_event, homeland_event,
+                    island_event, leader_disruption,
+                ),
+                probabilities=(
+                    common_probability, cn_probability, def_probability,
+                    homeland_probability, island_probability,
+                    leader_attempt_hazard * (1.0 - intercept_probability),
+                ),
+            )
         leader_severity = rng.uniform(0.18, 0.62, (n, 4))
         if hybrid_system is not None:
             hybrid_system.apply_leader_reset(
@@ -826,6 +879,100 @@ def simulate_mechanisms(
             0.04, 0.96,
         )
 
+        stochastic_geometry_factors = None
+        if stochastic_geometry_system is not None:
+            geometry_damage = np.clip(
+                s["actor_homeland_damage"] + s["actor_island_chain_damage"]
+                + 0.16 * np.mean(1.0 - s["actor_command"], axis=2), 0.0, 1.0
+            )
+            geometry_infrastructure = np.column_stack((
+                np.mean(s["nodes_cn"][:, :5], axis=1),
+                np.mean(s["nodes_def"][:, :5], axis=1),
+                np.clip(0.94 - 0.65 * s["actor_homeland_damage"][:, 2], 0.05, 1.0),
+                np.clip(0.92 - 0.68 * s["actor_homeland_damage"][:, 3], 0.05, 1.0),
+            ))
+            geometry_repair = np.clip(
+                0.46 * s["actor_financial_capacity"]
+                + 0.34 * np.mean(s["actor_sector_output"], axis=2)
+                + 0.20 * s["actor_network"], 0.02, 1.0
+            )
+            stochastic_geometry_factors = stochastic_geometry_system.update(
+                month=month,
+                conflict_intensity=intensity,
+                common_mark=common_mark,
+                actor_damage=geometry_damage,
+                infrastructure=geometry_infrastructure,
+                repair_capacity=geometry_repair,
+                actor_network=s["actor_network"],
+                financial_capacity=s["actor_financial_capacity"],
+            )
+            if stochastic_geometry_system.feedback_enabled:
+                s["actor_front_rear_integrity"] = np.clip(
+                    s["actor_front_rear_integrity"]
+                    * stochastic_geometry_factors.logistics[:, :, None], 0.02, 1.0
+                )
+                s["actor_network"] = np.clip(
+                    s["actor_network"]
+                    * (0.90 + 0.10 * stochastic_geometry_factors.network), 0.02, 1.0
+                )
+                s["actor_panic"] = np.clip(
+                    s["actor_panic"]
+                    + 0.012 * stochastic_geometry_factors.social_exposure, 0.0, 1.0
+                )
+
+        transport_symplectic_factors = None
+        if transport_symplectic_system is not None:
+            transport_damage = np.clip(
+                s["actor_homeland_damage"] + s["actor_island_chain_damage"]
+                + 0.16 * np.mean(1.0 - s["actor_command"], axis=2), 0.0, 1.0
+            )
+            transport_command = (
+                np.prod(np.clip(s["actor_command"], 0.03, 1.0), axis=2)
+                ** (1.0 / 3.0)
+            ) * s["leader_continuity"]
+            transport_mobilization = np.column_stack((
+                s["mobil_cn"], s["mobil_def"], us * s["mobil_def"],
+                jp * s["mobil_def"],
+            ))
+            transport_shortage = np.column_stack((
+                np.clip(1.0 - np.min(s["stocks_cn"], axis=1), 0.0, 1.0),
+                np.clip(1.0 - np.min(s["stocks_def"], axis=1), 0.0, 1.0),
+                np.clip(0.35 * (1.0 - np.min(s["stocks_def"], axis=1)), 0.0, 1.0),
+                np.clip(0.40 * (1.0 - np.min(s["stocks_def"], axis=1)), 0.0, 1.0),
+            ))
+            transport_symplectic_factors = transport_symplectic_system.update(
+                month=month,
+                conflict_intensity=intensity,
+                actor_damage=transport_damage,
+                actor_output=np.mean(s["actor_sector_output"], axis=2),
+                financial_capacity=s["actor_financial_capacity"],
+                actor_network=s["actor_network"],
+                actor_command=transport_command,
+                actor_support=s["actor_support"],
+                actor_mobilization=transport_mobilization,
+                stock_shortage=transport_shortage,
+                geometry_logistics=(
+                    stochastic_geometry_factors.logistics
+                    if stochastic_geometry_factors is not None else None
+                ),
+                geometry_network=(
+                    stochastic_geometry_factors.network
+                    if stochastic_geometry_factors is not None else None
+                ),
+            )
+            s["actor_front_rear_integrity"] = np.clip(
+                s["actor_front_rear_integrity"]
+                * transport_symplectic_factors.logistics[:, :, None], 0.02, 1.0
+            )
+            s["actor_network"] = np.clip(
+                s["actor_network"] * transport_symplectic_factors.network,
+                0.02, 1.0,
+            )
+            s["actor_sector_output"] = np.clip(
+                s["actor_sector_output"]
+                * transport_symplectic_factors.production[:, :, None], 0.02, 1.30
+            )
+
         if strategy_system is not None:
             preliminary_balance = (
                 0.38 * (s["air"] - 0.5) + 0.38 * (s["sea"] - 0.5)
@@ -857,6 +1004,13 @@ def simulate_mechanisms(
             s["actor_strategy_controls"] = strategy_factors.controls
 
         command_eff = np.prod(np.clip(s["actor_command"], 0.03, 1.0), axis=2) ** (1.0 / 3.0)
+        command_eff = np.clip(
+            command_eff * s["actor_social_morale_factor"], 0.02, 1.0
+        )
+        if transport_symplectic_factors is not None:
+            command_eff = np.clip(
+                command_eff * transport_symplectic_factors.command, 0.02, 1.0
+            )
         if hybrid_factors is not None:
             command_eff = np.clip(command_eff * hybrid_factors.command, 0.02, 1.0)
         if topology_factors is not None:
@@ -931,6 +1085,30 @@ def simulate_mechanisms(
             s["pnt_def"] = np.sum(
                 pnt_factors.integrity[:, 1:] * coalition_weights, axis=1
             )
+            if (
+                stochastic_geometry_factors is not None
+                and stochastic_geometry_system.feedback_enabled
+            ):
+                s["pnt_cn"] = np.clip(
+                    s["pnt_cn"] * stochastic_geometry_factors.pnt[:, 0], 0.03, 0.99
+                )
+                s["pnt_def"] = np.clip(
+                    s["pnt_def"] * np.sum(
+                        stochastic_geometry_factors.pnt[:, 1:] * coalition_weights,
+                        axis=1,
+                    ), 0.03, 0.99
+                )
+            if transport_symplectic_factors is not None:
+                s["pnt_cn"] = np.clip(
+                    s["pnt_cn"] * transport_symplectic_factors.pnt[:, 0],
+                    0.03, 0.99,
+                )
+                s["pnt_def"] = np.clip(
+                    s["pnt_def"] * np.sum(
+                        transport_symplectic_factors.pnt[:, 1:] * coalition_weights,
+                        axis=1,
+                    ), 0.03, 0.99,
+                )
         else:
             s["pnt_cn"] = np.clip(s["pnt_cn"] + 0.018 * (0.80 - s["pnt_cn"]) - pnt_hit_cn, 0.12, 0.98)
             s["pnt_def"] = np.clip(s["pnt_def"] + 0.018 * (0.82 - s["pnt_def"]) - pnt_hit_def, 0.12, 0.99)
@@ -976,6 +1154,10 @@ def simulate_mechanisms(
         production_def = (
             0.0145 + 0.012 * s["mobil_def"]
         ) * (0.70 + 1.40 * np.sum(s["actor_strategy_controls"][:, 1:, 2] * coalition_weights, axis=1)) * (0.45 + 0.55 * allied) * s["nodes_def"][:, 4] * cfg["def_log"] * scenario["def_supply"] * collapse_penalty_def * coalition_output_prior * coalition_front_prior * trade_industry_def
+        production_cn *= s["actor_social_labor_factor"][:, 0]
+        production_def *= np.sum(
+            s["actor_social_labor_factor"][:, 1:] * coalition_weights, axis=1
+        )
         if mechanism_factors is not None:
             production_cn *= mechanism_factors.procurement_factor[:, 0]
             production_def *= np.sum(
@@ -1022,6 +1204,17 @@ def simulate_mechanisms(
                 pnt_system.integrity if pnt_system is not None
                 else np.column_stack((s["pnt_cn"], s["pnt_def"], s["pnt_def"], s["pnt_def"]))
             )
+            if (
+                stochastic_geometry_factors is not None
+                and stochastic_geometry_system.feedback_enabled
+            ):
+                pnt_by_actor = np.clip(
+                    pnt_by_actor * stochastic_geometry_factors.pnt, 0.03, 0.99
+                )
+            if transport_symplectic_factors is not None:
+                pnt_by_actor = np.clip(
+                    pnt_by_actor * transport_symplectic_factors.pnt, 0.03, 0.99
+                )
             operational_factors = operations_system.update(
                 production=actor_production,
                 consumption=actor_consumption,
@@ -1276,6 +1469,14 @@ def simulate_mechanisms(
             financial_aid = financial_factors.aid
             financial_stress = financial_factors.stress
             financial_inflation = financial_factors.inflation
+            # Social-policy spending and disruption are owned by the political
+            # closure and enter finance with an explicit one-month lag.
+            financial_fiscal = np.clip(
+                financial_fiscal - s["actor_social_fiscal_drag"], 0.02, 1.0
+            )
+            financial_stress = np.clip(
+                financial_stress + 0.45 * s["actor_social_fiscal_drag"], 0.0, 1.0
+            )
             s["actor_financial_capacity"] = np.clip(
                 0.40 * financial_fiscal + 0.35 * financial_credit
                 + 0.25 * financial_payment, 0.05, 1.0
@@ -1644,26 +1845,67 @@ def simulate_mechanisms(
                 s["actor_action"][:, 1] - 0.20 * effective_proxy
                 + 0.16 * s["taiwan_proxy_leakage"], 0.0, 1.0
             )
+        political_factors = None
+        if flags["collective_action_regime_closure"] and political_system is not None:
+            political_factors = political_system.update(
+                month=month,
+                support=s["actor_support"],
+                action_seed=s["actor_action"],
+                network_action=mean_action,
+                actor_network=s["actor_network"],
+                actor_norm=s["actor_norm"],
+                actor_panic=s["actor_panic"],
+                shortage=actor_shortage,
+                inflation=s["actor_inflation"],
+                output=mean_output,
+                damage=actor_damage,
+                financial_stress=financial_stress,
+                fiscal_capacity=financial_fiscal,
+                progress=progress_signal,
+                command=command_eff,
+                leader_continuity=s["leader_continuity"],
+                social_mobilization=s["actor_social_mobilization"],
+                social_fatigue=s["actor_social_fatigue"],
+                conflict_intensity=intensity,
+                war_intervention=np.column_stack((
+                    np.ones(n), np.ones(n), us, jp
+                )),
+            )
+            s["actor_action"] = political_factors.collective_action
+            mean_action = political_factors.network_action
+            s["actor_support"] = np.clip(
+                s["actor_support"] + political_factors.support_shift, 0.01, 0.99
+            )
+            s["actor_social_labor_factor"] = political_factors.labor_factor
+            s["actor_social_logistics_factor"] = political_factors.logistics_factor
+            s["actor_social_morale_factor"] = political_factors.morale_factor
+            s["actor_social_fiscal_drag"] = political_factors.fiscal_drag
+            s["actor_social_war_continuation"] = political_factors.war_continuation
+            s["actor_social_negotiation_pressure"] = political_factors.negotiation_pressure
         social_target = np.clip(
             0.34 * actor_cog + 0.28 * s["actor_norm"] + 0.25 * s["actor_network"]
             + 0.13 * (1.0 - s["actor_panic"]) - 0.20 * s["actor_action"],
             0.0, 1.0,
         )
-        political_fragility = np.clip(
-            0.22 * np.clip(s["actor_debt_stress"], 0.0, 1.0)
-            + 0.16 * mean_distress + 0.18 * s["actor_panic"]
-            + 0.18 * s["actor_action"] + 0.14 * (1.0 - s["actor_network"])
-            + 0.12 * (1.0 - s["actor_res"][:, :, 3]),
-            0.0, 1.0,
-        )
-        political_fragility = np.clip(
-            political_fragility + 0.12 * actor_mobil * (1.0 - s["actor_support"]), 0.0, 1.0
-        )
-        political_fragility = np.clip(
-            political_fragility + 0.10 * financial_stress
-            + 0.06 * (1.0 - financial_payment) + 0.05 * (1.0 - financial_fiscal),
-            0.0, 1.0,
-        )
+        if political_factors is not None:
+            political_fragility = political_factors.political_fragility
+        else:
+            political_fragility = np.clip(
+                0.22 * np.clip(s["actor_debt_stress"], 0.0, 1.0)
+                + 0.16 * mean_distress + 0.18 * s["actor_panic"]
+                + 0.18 * s["actor_action"] + 0.14 * (1.0 - s["actor_network"])
+                + 0.12 * (1.0 - s["actor_res"][:, :, 3]),
+                0.0, 1.0,
+            )
+            political_fragility = np.clip(
+                political_fragility
+                + 0.12 * actor_mobil * (1.0 - s["actor_support"]), 0.0, 1.0
+            )
+            political_fragility = np.clip(
+                political_fragility + 0.10 * financial_stress
+                + 0.06 * (1.0 - financial_payment)
+                + 0.05 * (1.0 - financial_fiscal), 0.0, 1.0
+            )
         actor_capability = np.stack([
             0.35 * mean_node_cn + 0.25 * np.mean(s["stocks_cn"], axis=1) + 0.20 * s["web_cn"] + 0.20 * s["cog_cn"],
             0.28 * mean_node_def + 0.22 * np.mean(s["stocks_def"], axis=1) + 0.18 * s["web_def"] + 0.18 * s["cog_def"] + 0.14 * (1.0 - s["land"]),
@@ -1739,15 +1981,29 @@ def simulate_mechanisms(
         )
         actor_hazard[:, :, 3] += np.clip(0.035 * (military_pressure - 0.72), 0.0, 0.03)
         actor_hazard = np.clip(actor_hazard, 0.0, 0.05)
-        coup_hazard = np.clip(
-            0.00002 + 0.030 * np.clip(political_fragility - 0.75, 0.0, 1.0)
-            + 0.020 * np.clip(0.20 - s["actor_res"][:, :, 3], 0.0, 1.0)
-            + 0.010 * np.clip(s["actor_action"] - 0.75, 0.0, 1.0)
-            + 0.010 * s["actor_collapse"][:, :, 2]
-            + 0.012 * s["actor_collapse"][:, :, 3],
-            0.0, 0.06,
-        )
-        new_coup = (~s["actor_coup"]) & (rng.random((n, 4)) < coup_hazard)
+        if political_factors is not None:
+            # V5.7 competing risks supersede the older independent coup draw.
+            new_coup = (~s["actor_coup"]) & political_factors.new_coup
+            new_revolution = political_factors.new_revolution
+            government_replaced = political_factors.government_replaced
+            revolution_suppressed = political_factors.revolution_suppressed
+            negotiated_reform = political_factors.negotiated_reform
+            order_restored = political_factors.order_restored
+        else:
+            coup_hazard = np.clip(
+                0.00002 + 0.030 * np.clip(political_fragility - 0.75, 0.0, 1.0)
+                + 0.020 * np.clip(0.20 - s["actor_res"][:, :, 3], 0.0, 1.0)
+                + 0.010 * np.clip(s["actor_action"] - 0.75, 0.0, 1.0)
+                + 0.010 * s["actor_collapse"][:, :, 2]
+                + 0.012 * s["actor_collapse"][:, :, 3],
+                0.0, 0.06,
+            )
+            new_coup = (~s["actor_coup"]) & (rng.random((n, 4)) < coup_hazard)
+            new_revolution = np.zeros((n, 4), dtype=bool)
+            government_replaced = np.zeros((n, 4), dtype=bool)
+            revolution_suppressed = np.zeros((n, 4), dtype=bool)
+            negotiated_reform = np.zeros((n, 4), dtype=bool)
+            order_restored = np.zeros((n, 4), dtype=bool)
         if hybrid_system is not None:
             hybrid_system.apply_coup_reset(s, new_coup)
         else:
@@ -1776,6 +2032,50 @@ def simulate_mechanisms(
             coup_signal = new_coup.astype(float)
             s["cog_cn"] = np.clip(s["cog_cn"] + 0.018 * (coup_signal[:, 1] + coup_signal[:, 2] + coup_signal[:, 3]) - 0.030 * coup_signal[:, 0], 0.04, 0.96)
             s["cog_def"] = np.clip(s["cog_def"] + 0.018 * coup_signal[:, 0] - 0.020 * coup_signal[:, 1] - 0.012 * coup_signal[:, 2] - 0.012 * coup_signal[:, 3], 0.04, 0.96)
+        if np.any(new_revolution):
+            # Revolution opens a contest episode; it is not an absorbing
+            # campaign terminal and therefore does not set permanent collapse.
+            s["actor_res"] = np.clip(
+                s["actor_res"] - new_revolution[:, :, None]
+                * np.array([0.06, 0.10, 0.12, 0.08])[None, None, :],
+                0.0, 1.0,
+            )
+            s["actor_command"] = np.clip(
+                s["actor_command"] * (1.0 - 0.22 * new_revolution[:, :, None]),
+                0.03, 0.995,
+            )
+        if np.any(government_replaced):
+            s["leader_continuity"] = np.where(
+                government_replaced,
+                np.maximum(0.18, 0.45 * s["leader_continuity"]),
+                s["leader_continuity"],
+            )
+            s["actor_command"] = np.clip(
+                s["actor_command"]
+                * (1.0 - 0.20 * government_replaced[:, :, None]),
+                0.03, 0.995,
+            )
+            s["actor_res"][:, :, 1] = np.clip(
+                s["actor_res"][:, :, 1] - 0.08 * government_replaced,
+                0.0, 1.0,
+            )
+        if np.any(revolution_suppressed):
+            s["actor_res"][:, :, 1] = np.clip(
+                s["actor_res"][:, :, 1] + 0.025 * revolution_suppressed,
+                0.0, 1.0,
+            )
+            s["actor_res"][:, :, 2] = np.clip(
+                s["actor_res"][:, :, 2] - 0.020 * revolution_suppressed,
+                0.0, 1.0,
+            )
+        if np.any(negotiated_reform | order_restored):
+            stabilizing_event = negotiated_reform | order_restored
+            s["actor_res"][:, :, 1] = np.clip(
+                s["actor_res"][:, :, 1] + 0.035 * stabilizing_event, 0.0, 1.0
+            )
+            s["actor_res"][:, :, 2] = np.clip(
+                s["actor_res"][:, :, 2] + 0.025 * stabilizing_event, 0.0, 1.0
+            )
         command_damage = actor_damage[:, :, None] * np.array([0.85, 1.00, 1.12])[None, None, :]
         command_repair = 0.018 * mean_output[:, :, None] * s["actor_res"][:, :, 3, None]
         hierarchy_cascade = np.stack([
@@ -1801,7 +2101,8 @@ def simulate_mechanisms(
             labor_capacity = np.clip(
                 manpower_effectiveness
                 * (1.0 - 0.38 * s["actor_labor_fatigue"])
-                * (1.0 - 0.28 * s["actor_labor_mismatch"]),
+                * (1.0 - 0.28 * s["actor_labor_mismatch"])
+                * s["actor_social_labor_factor"],
                 0.05, 1.15,
             )
             macro_system.update(
@@ -1809,6 +2110,7 @@ def simulate_mechanisms(
                 actor_damage=actor_damage,
                 actor_logistics=(
                     np.mean(s["actor_front_rear_integrity"], axis=2)
+                    * s["actor_social_logistics_factor"]
                     * (energy_opening.logistics if energy_opening is not None else 1.0)
                     * (
                         geometry_factors.macro_logistics_factor
@@ -1896,6 +2198,22 @@ def simulate_mechanisms(
         }
         for name, value in values.items():
             sums[name] += value
+        if rare_event_system is not None:
+            rare_event_system.observe(
+                month=month,
+                actor_damage=s["actor_homeland_damage"] + 0.35 * s["actor_island_chain_damage"],
+                actor_output=mean_output,
+                financial_capacity=s["actor_financial_capacity"],
+                actor_network=s["actor_network"],
+                actor_command=s["actor_command"],
+                actor_support=s["actor_support"],
+                actor_panic=s["actor_panic"],
+                actor_action=s["actor_action"],
+                actor_resilience=s["actor_res"],
+                stock_shortage=actor_shortage,
+                front_rear_integrity=s["actor_front_rear_integrity"],
+                leader_continuity=s["leader_continuity"],
+            )
         min_stock_cn = np.minimum(min_stock_cn, np.min(s["stocks_cn"], axis=1))
         min_stock_def = np.minimum(min_stock_def, np.min(s["stocks_def"], axis=1))
         max_repair_cn = np.maximum(max_repair_cn, s["repair_cn"])
@@ -1952,7 +2270,10 @@ def simulate_mechanisms(
                     spatial_factors.organized_defense.copy()
                     if spatial_factors is not None else 1.0 - s["land"].copy()
                 ),
-                "importance_weight_paths": importance_weight.copy(),
+                "importance_weight_paths": (
+                    rare_event_system.weights()
+                    if rare_event_system is not None else importance_weight.copy()
+                ),
                 "diagnostics": {
                     "air_control_p10_p50_p90": q(avg["air"]),
                     "sea_control_p10_p50_p90": q(avg["sea"]),
@@ -1999,6 +2320,12 @@ def simulate_mechanisms(
                             "collective_action": float(np.median(s["actor_action"][:, i])),
                             "active_mobilization": float(np.median(s["actor_social_mobilization"][:, i])),
                             "active_fatigue": float(np.median(s["actor_social_fatigue"][:, i])),
+                            "labor_factor": float(np.median(s["actor_social_labor_factor"][:, i])),
+                            "logistics_factor": float(np.median(s["actor_social_logistics_factor"][:, i])),
+                            "morale_factor": float(np.median(s["actor_social_morale_factor"][:, i])),
+                            "fiscal_drag": float(np.median(s["actor_social_fiscal_drag"][:, i])),
+                            "war_continuation": float(np.median(s["actor_social_war_continuation"][:, i])),
+                            "negotiation_pressure": float(np.median(s["actor_social_negotiation_pressure"][:, i])),
                         }
                         for i, actor in enumerate(("china", "taiwan", "united_states", "japan"))
                     },
@@ -2107,6 +2434,14 @@ def simulate_mechanisms(
                     ),
                     "geometric_multiscale_coupling": (
                         geometry_system.diagnostics() if geometry_system is not None else None
+                    ),
+                    "dynamic_stochastic_geometry": (
+                        stochastic_geometry_system.diagnostics()
+                        if stochastic_geometry_system is not None else None
+                    ),
+                    "hybrid_large_deviation": (
+                        rare_event_system.diagnostics()
+                        if rare_event_system is not None else None
                     ),
                 },
             }

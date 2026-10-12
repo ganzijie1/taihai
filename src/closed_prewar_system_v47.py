@@ -62,6 +62,7 @@ class ClosedPrewarEvolutionSystem:
     def __init__(
         self, paths: int, seed: int, observed_anchor: dict,
         causal_pressure_effect: float = 0.0, scenario: str = "central",
+        econometric_draws: dict[str, np.ndarray] | None = None,
     ):
         if scenario not in PREWAR_SCENARIOS:
             raise ValueError(f"unknown prewar scenario: {scenario}")
@@ -69,6 +70,7 @@ class ClosedPrewarEvolutionSystem:
         self.rng = np.random.default_rng(seed)
         self.anchor = observed_anchor
         self.causal_pressure_effect = float(causal_pressure_effect)
+        self.econometric_draws = econometric_draws or {}
         raw_scenario = PREWAR_SCENARIOS[scenario]
         self.scenario = scenario
         self.scenario_parameters = {
@@ -108,6 +110,16 @@ class ClosedPrewarEvolutionSystem:
         self.growth_rate = np.repeat(
             np.array([[4.40, 6.455, 2.30, 0.80]]), paths, axis=0
         )
+        if "growth_rate" in self.econometric_draws:
+            estimated_growth = np.asarray(self.econometric_draws["growth_rate"], dtype=float)
+            if estimated_growth.shape != (paths, 4):
+                raise ValueError("econometric growth draws must have shape (paths, 4)")
+            self.growth_rate = np.clip(estimated_growth, -2.5, 8.5)
+        self.hmm_transition_draw = self.econometric_draws.get("hmm_transition")
+        if self.hmm_transition_draw is not None:
+            self.hmm_transition_draw = np.asarray(self.hmm_transition_draw, dtype=float)
+            if self.hmm_transition_draw.shape != (paths, 3, 3):
+                raise ValueError("econometric HMM draws must have shape (paths, 3, 3)")
         self.leader_stage = np.zeros((paths, 4), dtype=np.int8)
         self.leader_continuity = np.ones((paths, 4))
         self.pipeline = np.zeros((paths, 2, 5, 6))
@@ -230,6 +242,11 @@ class ClosedPrewarEvolutionSystem:
         ), axis=1)
         transition = np.clip(transition, 1e-5, None)
         transition /= transition.sum(axis=2, keepdims=True)
+        if self.hmm_transition_draw is not None:
+            # The labelled monthly sample identifies baseline persistence;
+            # endogenous strategy still supplies 40% of each transition.
+            transition = 0.60 * self.hmm_transition_draw + 0.40 * transition
+            transition /= transition.sum(axis=2, keepdims=True)
         predicted = np.einsum("pi,pij->pj", self.pressure_belief, transition)
         latent_pressure = predicted[:, 1] + 2.0 * predicted[:, 2]
         local_shock = self.rng.random(self.paths) < 0.035
@@ -447,6 +464,8 @@ class ClosedPrewarEvolutionSystem:
             "arms_pipeline_stock_residual": self.max_pipeline_residual,
             "minimum_pipeline_stock": float(np.min(self.pipeline)),
             "growth_rate_range": [float(np.min(self.growth_rate)), float(np.max(self.growth_rate))],
+            "econometric_growth_draws_active": "growth_rate" in self.econometric_draws,
+            "econometric_hmm_draws_active": self.hmm_transition_draw is not None,
             "economic_capital_range": [float(np.min(self.economic_capital)), float(np.max(self.economic_capital))],
             "scenario": self.scenario,
             "scenario_parameters": {

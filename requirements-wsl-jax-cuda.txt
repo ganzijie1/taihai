@@ -1,0 +1,8 @@
+numpy==1.26.4
+numba==0.60.0
+scipy==1.13.1
+pyamg==5.3.0
+ml-dtypes==0.4.1
+jax[cuda12]==0.4.30
+--extra-index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0+cu124

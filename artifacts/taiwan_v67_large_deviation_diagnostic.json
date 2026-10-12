@@ -1,0 +1,79 @@
+{
+  "model_version": "V6.7-LD",
+  "status": "PASS",
+  "checks": {
+    "analytic_likelihood_identity": true,
+    "sample_likelihood_normalization": true,
+    "effective_sample_size": true,
+    "ordinary_mc_overlap": true,
+    "importance_sampling_overlap": true,
+    "ordinary_importance_agreement": true,
+    "empirical_measure_mass": true,
+    "causal_clock": true,
+    "finite_nonnegative_actions": true,
+    "action_refinement": true
+  },
+  "overlap": {
+    "exact_probability": 0.21999999999999997,
+    "ordinary_monte_carlo": 0.21759033203125,
+    "importance_sampling": 0.21905765743046013
+  },
+  "action_refinement": {
+    "16": 2.5443580812980397e-05,
+    "32": 1.5913737602175814e-06,
+    "64": 9.947883605544017e-08,
+    "128": 6.21770816007186e-09
+  },
+  "action_refinement_last_difference": 9.326112789536831e-08,
+  "module_diagnostics": {
+    "model_version": "V6.7-LD",
+    "months": 24,
+    "path_conditioned": true,
+    "defensive_mixture_importance_sampling": true,
+    "exact_mixture_likelihood_ratio": true,
+    "asymptotic_action_not_used_as_probability": true,
+    "action_ledger_enabled": true,
+    "same_path_bidirectional_feedback": true,
+    "common_noise_conditioned": true,
+    "future_information_used": false,
+    "max_causal_clock_violation": 0.0,
+    "max_likelihood_identity_residual": 1.1102230246251565e-16,
+    "sample_likelihood_normalization_residual": 0.01036101959563851,
+    "effective_sample_size": 7359.861700832766,
+    "effective_sample_size_ratio": 0.4492103088887186,
+    "max_empirical_measure_mass_residual": 0.0,
+    "mode_counts": {
+      "baseline": 4654,
+      "china_system_stress": 2487,
+      "defender_system_stress": 2242,
+      "alliance_system_stress": 2120,
+      "common_network_cascade": 2471,
+      "joint_extreme": 2410
+    },
+    "rare_set_hit_share": {
+      "joint_logistics_collapse": 0.0,
+      "multi_domain_command_failure": 0.0,
+      "economic_political_crisis": 0.0,
+      "leadership_disruption": 0.0
+    },
+    "minimum_empirical_action_on_hit": [
+      null,
+      null,
+      null,
+      null
+    ],
+    "mean_continuous_action": 2.512630239601402,
+    "mean_jump_action": 5.66885891832356,
+    "mean_field_empirical_action": 17.92128920603639,
+    "jump_event_counts": [
+      16989,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "proposal_support_complete": true,
+  "target_support_complete": true
+}

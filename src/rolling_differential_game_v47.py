@@ -39,6 +39,8 @@ class RollingHorizonDifferentialGame:
             [0.20, 0.20, 0.24, 0.18, 0.18],
         ])
         self.candidates = raw / raw.sum(axis=1, keepdims=True)
+        self._scenario_multiplier = np.array([0.82, 1.00, 1.24])
+        self._candidate_cost = np.sum(self.candidates ** 2, axis=1)
         self.controls = np.repeat(
             np.array([0.26, 0.25, 0.21, 0.19, 0.09])[None, None, :],
             paths * 4, axis=0,
@@ -50,6 +52,7 @@ class RollingHorizonDifferentialGame:
         self._belief = None
         self._belief_variance = None
         self._last_observation = None
+        self.candidate_batch_calls = 0
 
     def _belief_update(self, observed: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         """One-step bounded Gaussian filter used as the POMDP belief state."""
@@ -95,58 +98,92 @@ class RollingHorizonDifferentialGame:
         economic_capacity: np.ndarray, support: np.ndarray,
         command: np.ndarray, intervention: np.ndarray,
     ) -> np.ndarray:
-        trial = controls.copy()
-        trial[:, player, :] = candidate[None, :]
-        scenario_multiplier = np.array([0.82, 1.00, 1.24])[None, :]
-        own_progress = np.repeat(progress[:, player, None], 3, axis=1)
-        own_stock = np.repeat(stocks[:, player, None], 3, axis=1)
-        own_damage = np.repeat(damage[:, player, None], 3, axis=1)
-        own_economy = np.repeat(economic_capacity[:, player, None], 3, axis=1)
-        own_support = np.repeat(support[:, player, None], 3, axis=1)
-        value = np.zeros((self.paths, 3))
-        opponent = np.mean(np.delete(trial, player, axis=1), axis=1)
+        return self._evaluate_candidates(
+            player, candidate[None, :], controls, progress, stocks, damage,
+            economic_capacity, support, command, intervention,
+        )[:, 0]
+
+    def _evaluate_candidates(
+        self, player: int, candidates: np.ndarray, controls: np.ndarray,
+        progress: np.ndarray, stocks: np.ndarray, damage: np.ndarray,
+        economic_capacity: np.ndarray, support: np.ndarray,
+        command: np.ndarray, intervention: np.ndarray,
+    ) -> np.ndarray:
+        """Evaluate the complete candidate lattice in one vectorized batch.
+
+        Axes are ``[path, candidate, transition_scenario]``.  Candidate-independent
+        beliefs and intervention means are broadcast views, so the rolling game no
+        longer copies and advances the full state once per candidate.
+        """
+        candidates = np.asarray(candidates, dtype=float)
+        candidate_count = candidates.shape[0]
+        trial = np.broadcast_to(
+            controls[:, None, :, :],
+            (self.paths, candidate_count, controls.shape[1], controls.shape[2]),
+        ).copy()
+        trial[:, :, player, :] = candidates[None, :, :]
+        scenario_multiplier = self._scenario_multiplier[None, None, :]
+        state_shape = (self.paths, candidate_count, 3)
+        own_progress = np.broadcast_to(
+            progress[:, player, None, None], state_shape
+        ).copy()
+        own_stock = np.broadcast_to(stocks[:, player, None, None], state_shape).copy()
+        own_damage = np.broadcast_to(damage[:, player, None, None], state_shape).copy()
+        own_economy = np.broadcast_to(
+            economic_capacity[:, player, None, None], state_shape
+        ).copy()
+        own_support = np.broadcast_to(support[:, player, None, None], state_shape).copy()
+        value = np.zeros(state_shape)
+        opponent = (
+            np.sum(trial, axis=2) - trial[:, :, player, :]
+        ) / max(trial.shape[2] - 1, 1)
+        intervention_mean = np.mean(intervention, axis=1)[:, None, None]
+        strike = trial[:, :, player, 0]
+        defense = trial[:, :, player, 1]
+        production = trial[:, :, player, 2]
+        repair = trial[:, :, player, 3]
+        negotiation = trial[:, :, player, 4]
+        command_player = command[:, player, None, None]
+        control_cost = np.sum(trial[:, :, player, :] ** 2, axis=2)[..., None]
         for step in range(6):
-            strike = trial[:, player, 0]
-            defense = trial[:, player, 1]
-            production = trial[:, player, 2]
-            repair = trial[:, player, 3]
-            negotiation = trial[:, player, 4]
             threat = (
-                opponent[:, 0] * np.mean(intervention, axis=1)
-            )[:, None] * scenario_multiplier
+                opponent[:, :, 0, None] * intervention_mean
+            ) * scenario_multiplier
             own_progress += (
-                0.045 * strike * command[:, player]
-            )[:, None] - 0.038 * threat * (1.0 - defense[:, None])
+                0.045 * strike[..., None] * command_player
+            ) - 0.038 * threat * (1.0 - defense[..., None])
             own_damage = np.clip(
-                own_damage + 0.030 * threat * (1.0 - defense[:, None])
-                - 0.022 * repair[:, None] * own_economy,
+                own_damage + 0.030 * threat * (1.0 - defense[..., None])
+                - 0.022 * repair[..., None] * own_economy,
                 0.0, 1.0,
             )
             own_stock = np.clip(
-                own_stock + 0.040 * production[:, None] * own_economy
-                - 0.035 * strike[:, None] - 0.018 * defense[:, None],
+                own_stock + 0.040 * production[..., None] * own_economy
+                - 0.035 * strike[..., None] - 0.018 * defense[..., None],
                 0.0, 1.4,
             )
             own_economy = np.clip(
-                own_economy - 0.020 * strike[:, None] - 0.012 * defense[:, None]
-                - 0.025 * own_damage + 0.010 * production[:, None],
+                own_economy - 0.020 * strike[..., None] - 0.012 * defense[..., None]
+                - 0.025 * own_damage + 0.010 * production[..., None],
                 0.05, 1.2,
             )
             own_support = np.clip(
                 own_support + 0.012 * own_progress - 0.020 * own_damage
-                - 0.012 * (strike + defense)[:, None] + 0.010 * negotiation[:, None],
+                - 0.012 * (strike + defense)[..., None]
+                + 0.010 * negotiation[..., None],
                 0.0, 1.0,
             )
             flow = (
                 0.48 * own_progress + 0.18 * own_stock + 0.14 * own_economy
                 + 0.12 * own_support - 0.28 * own_damage
-                + 0.08 * negotiation[:, None] * (1.0 - np.abs(own_progress))
-                - 0.10 * np.sum(trial[:, player, :] ** 2, axis=1)[:, None]
+                + 0.08 * negotiation[..., None] * (1.0 - np.abs(own_progress))
+                - 0.10 * control_cost
             )
             value += (0.96 ** step) * flow
         # Distributionally robust rolling objective: retain expected value but
         # explicitly penalize the adverse transition scenario.
-        return 0.75 * np.mean(value, axis=1) + 0.25 * np.min(value, axis=1)
+        self.candidate_batch_calls += 1
+        return 0.75 * np.mean(value, axis=2) + 0.25 * np.min(value, axis=2)
 
     def update(
         self, *, progress: np.ndarray, stocks: np.ndarray, damage: np.ndarray,
@@ -167,14 +204,12 @@ class RollingHorizonDifferentialGame:
         for _ in range(max_iterations):
             previous = controls.copy()
             for player in update_order:
-                candidate_values = np.stack([
-                    self._evaluate(
-                        player, candidate, controls, belief["progress"], belief["stocks"],
-                        belief["damage"], belief["economic_capacity"], belief["support"],
-                        belief["command"], intervention,
-                    )
-                    for candidate in self.candidates
-                ], axis=1)
+                candidate_values = self._evaluate_candidates(
+                    player, self.candidates, controls, belief["progress"],
+                    belief["stocks"], belief["damage"],
+                    belief["economic_capacity"], belief["support"],
+                    belief["command"], intervention,
+                )
                 centered = candidate_values - np.max(candidate_values, axis=1, keepdims=True)
                 response_weights = np.exp(np.clip(centered / 0.045, -35.0, 0.0))
                 response_weights /= np.maximum(
@@ -212,4 +247,6 @@ class RollingHorizonDifferentialGame:
             "minimum_control": float(np.min(self.controls)),
             "nonconverged_months": self.nonconverged_months,
             "max_nonconverged_residual": self.max_nonconverged_residual,
+            "candidate_evaluation_backend": "vectorized_candidate_batch",
+            "candidate_batch_calls": self.candidate_batch_calls,
         }

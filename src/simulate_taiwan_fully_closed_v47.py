@@ -139,11 +139,19 @@ def run(
     hybrid_config: dict | None = None,
     topology_enabled: bool = False,
     mfg_config: dict | None = None,
+    geometry_config: dict | None = None,
     macro_factory=None,
+    political_factory=None,
+    stochastic_geometry_factory=None,
+    transport_symplectic_factory=None,
+    rare_event_factory=None,
+    econometric_draws: dict[str, np.ndarray] | None = None,
     traceability_path: Path = TRACEABILITY,
     coupling_audit_path: Path = COUPLING_AUDIT,
 ):
     assert_complete_gate(traceability_path, coupling_audit_path)
+    geometry_config = geometry_config or {}
+    mfg_config = mfg_config or {}
     battle.PATHS = paths
     battle.MONTHS = months
     battle.HORIZON_MONTHS = tuple(y * 12 for y in battle.HORIZON_YEARS if y * 12 <= months)
@@ -161,10 +169,13 @@ def run(
         paths, battle.SEED + 812_003, observed_prewar,
         causal_pressure_effect=causal_estimate["estimate_log_points"],
         scenario=prewar_scenario,
+        econometric_draws=econometric_draws,
     )
     prewar_trajectory = prewar_system.run_trajectory(months=LONG_TERM_MONTHS)
     _, force_row = prewar_model.force_onset_paths(paths, battle.SEED + 930_007)
-    survival_model = StratifiedCompetingRiskSurvival(paths, battle.SEED + 915_001)
+    survival_model = StratifiedCompetingRiskSurvival(
+        paths, battle.SEED + 915_001, econometric_draws=econometric_draws
+    )
     survival = survival_model.evaluate_trajectory(
         actor_support=prewar_trajectory["actor_support"],
         taiwan_readiness=prewar_trajectory["taiwan_readiness"],
@@ -223,7 +234,9 @@ def run(
         financial_stress=initial_stress,
     )
     survival.aft_delay_months = aft_delay
-    choice_model = EndogenousInterventionChoiceModel(paths, battle.SEED + 920_003)
+    choice_model = EndogenousInterventionChoiceModel(
+        paths, battle.SEED + 920_003, econometric_draws=econometric_draws
+    )
     choice = choice_model.probabilities(
         actor_support=prewar["actor_support"],
         taiwan_readiness=prewar["taiwan_readiness"],
@@ -253,6 +266,12 @@ def run(
             social = WartimeSocialContagionSystem(
                 paths, innovation_seed + 23_009, prewar["actor_support"]
             )
+            political = (
+                political_factory(
+                    paths, innovation_seed + 29_011, prewar["actor_support"]
+                )
+                if political_factory is not None else None
+            )
             mfg = ContinuousMultiPopulationMFG(
                 paths, innovation_seed + 37_013, prewar["actor_support"],
                 geometry_enabled=geometry_enabled,
@@ -260,19 +279,23 @@ def run(
             )
             macro_class = macro_factory or CoupledMacroEconomicSystem
             macro = macro_class(
-                paths, innovation_seed + 41_021, trade.v43.SCENARIOS[name]
+                paths, innovation_seed + 41_021, trade.v43.SCENARIOS[name],
+                econometric_draws=econometric_draws,
             )
             operations = DynamicOperationalConstraintSystem(
                 paths, innovation_seed + 47_027, terrain,
                 geometry_enabled=geometry_enabled,
+                **geometry_config.get("operations", {}),
             )
             pnt = DynamicGeospatialPNTSystem(
-                paths, terrain, geometry_enabled=geometry_enabled
+                paths, terrain, geometry_enabled=geometry_enabled,
+                **geometry_config.get("pnt", {}),
             )
             strategy = RollingHorizonDifferentialGame(paths, innovation_seed + 53_033)
             spatial = SpatialControlNetwork(
                 paths, innovation_seed + 59_041, terrain,
                 geometry_enabled=geometry_enabled,
+                **geometry_config.get("spatial", {}),
             )
             mechanism = (
                 RobustDynamicMechanismDesigner(
@@ -284,15 +307,34 @@ def run(
                 FourPartyEnergyNetwork(
                     paths, innovation_seed + 67_049,
                     geometry_enabled=geometry_enabled,
+                    **geometry_config.get("energy", {}),
                 )
                 if energy_enabled else None
             )
-            geometry = GeometricMultiscaleCoupler(paths) if geometry_enabled else None
+            geometry = (
+                GeometricMultiscaleCoupler(
+                    paths, **geometry_config.get("multiscale", {})
+                ) if geometry_enabled else None
+            )
             hybrid = (
                 HybridFilippovImpulseSystem(paths, **(hybrid_config or {}))
                 if hybrid_enabled else None
             )
             topology = TopologicalRegimeDynamics(paths) if topology_enabled else None
+            stochastic_geometry = (
+                stochastic_geometry_factory(
+                    paths, innovation_seed + 79_061, terrain
+                ) if stochastic_geometry_factory is not None else None
+            )
+            transport_symplectic = (
+                transport_symplectic_factory(
+                    paths, innovation_seed + 83_071, terrain
+                ) if transport_symplectic_factory is not None else None
+            )
+            rare_event = (
+                rare_event_factory(paths, innovation_seed + 89_083)
+                if rare_event_factory is not None else None
+            )
             snapshots, _ = battle.simulate_mechanisms(
                 np.random.default_rng(innovation_seed), event_year, case, "central", terrain, sipri,
                 financial_system=finance, prewar_state=prewar_battle,
@@ -304,6 +346,10 @@ def run(
                 geometry_system=geometry,
                 hybrid_system=hybrid,
                 topology_system=topology,
+                political_system=political,
+                stochastic_geometry_system=stochastic_geometry,
+                transport_symplectic_system=transport_symplectic,
+                rare_event_system=rare_event,
             )
             key = f"{case}|{name}"
             diagnostics[key] = {
@@ -317,6 +363,20 @@ def run(
                 "geometry": geometry.diagnostics() if geometry is not None else None,
                 "hybrid": hybrid.diagnostics() if hybrid is not None else None,
                 "topology": topology.diagnostics() if topology is not None else None,
+                "political": (
+                    political.diagnostics() if political is not None else None
+                ),
+                "stochastic_geometry": (
+                    stochastic_geometry.diagnostics()
+                    if stochastic_geometry is not None else None
+                ),
+                "transport_symplectic": (
+                    transport_symplectic.diagnostics()
+                    if transport_symplectic is not None else None
+                ),
+                "large_deviation": (
+                    rare_event.diagnostics() if rare_event is not None else None
+                ),
                 "finance_accounting": {
                     "max_bilateral_aid_residual": finance.max_bilateral_aid_residual,
                 },
@@ -454,7 +514,8 @@ def run(
     hybrid_switch_totals = {
         surface: 0 for surface in ("logistics", "financial", "mobilization", "command")
     }
-    hybrid_nonsaturated_cells = {surface: 0 for surface in hybrid_switch_totals}
+    hybrid_dynamic_cells = {surface: 0 for surface in hybrid_switch_totals}
+    hybrid_terminal_saturated_cells = {surface: 0 for surface in hybrid_switch_totals}
     topology_active_cells = 0
     topology_visited_symbols: set[int] = set()
     topology_max_feedback_deviation = 0.0
@@ -474,11 +535,13 @@ def run(
                 f"{diag['macro']['max_dsge_solver_residual']:.3g}"
             )
         if diag["mfg"]["nonconverged_months"]:
+            events = diag["mfg"].get("nonconverged_events", [])
+            event_tail = events[-1] if events else {}
             errors.append(
                 f"{cell}: MFG nonconverged months="
                 f"{diag['mfg']['nonconverged_months']}, last="
                 f"{diag['mfg']['last_fixed_point_residual']:.3g}, max="
-                f"{diag['mfg']['max_fixed_point_residual']:.3g}"
+                f"{diag['mfg']['max_fixed_point_residual']:.3g}, event={event_tail}"
             )
         if diag["mfg"].get("advanced_graphon"):
             mfg_diag = diag["mfg"]
@@ -511,6 +574,20 @@ def run(
                 errors.append(f"{cell}: GeomLoss was not exercised")
             if geometry_diag["geomloss_failures"]:
                 errors.append(f"{cell}: GeomLoss failure")
+            if mfg_config.get("riemannian_anderson_enabled", False):
+                riemannian = mfg_diag.get("riemannian_anderson")
+                if riemannian is None:
+                    errors.append(f"{cell}: missing Riemannian Anderson diagnostics")
+                else:
+                    if riemannian["maximum_transport_tangency_residual"] > 1e-10:
+                        errors.append(f"{cell}: Riemannian transport tangency residual")
+                    if riemannian["maximum_sphere_residual"] > 1e-10:
+                        errors.append(f"{cell}: Riemannian sphere residual")
+            if mfg_config.get("riemannian_trust_region_enabled", False):
+                for role in ("major", "minor"):
+                    trust = mfg_diag[f"{role}_riemannian_trust_region"]
+                    if trust["maximum_radius"] <= 0.0:
+                        errors.append(f"{cell}: inactive {role} Riemannian trust region")
         if diag["strategy"]["nonconverged_months"]:
             errors.append(
                 f"{cell}: strategy nonconverged months="
@@ -555,6 +632,38 @@ def run(
                 errors.append(f"{cell}: spatial graph disconnected")
             if diag["geometry"]["max_aggregation_residual"] > 1e-12:
                 errors.append(f"{cell}: multiscale aggregation residual")
+            if geometry_config.get("operations", {}).get("advanced_geometry", False):
+                if diag["operations"]["max_randers_one_form_norm"] >= 1.0:
+                    errors.append(f"{cell}: Randers positivity violation")
+                if diag["operations"]["max_so3_orthogonality_residual"] > 1e-12:
+                    errors.append(f"{cell}: SO(3) orthogonality residual")
+                if diag["operations"]["max_so3_determinant_residual"] > 1e-12:
+                    errors.append(f"{cell}: SO(3) determinant residual")
+            if geometry_config.get("pnt", {}).get("joseph_update", False):
+                if diag["pnt"]["max_joseph_symmetry_residual"] > 1e-12:
+                    errors.append(f"{cell}: Joseph covariance symmetry residual")
+            if geometry_config.get("pnt", {}).get("bures_barycenter_enabled", False):
+                if diag["pnt"]["max_barycenter_residual"] > 5e-7:
+                    errors.append(f"{cell}: Bures barycenter residual")
+                if diag["pnt"]["max_source_weight_residual"] > 1e-12:
+                    errors.append(f"{cell}: Bures source weight residual")
+            if geometry_config.get("spatial", {}).get("dynamic_finsler", False):
+                if diag["spatial"]["max_dynamic_transition_row_residual"] > 1e-10:
+                    errors.append(f"{cell}: dynamic Finsler transition row residual")
+            if geometry_config.get("multiscale", {}).get("learned_slow_manifold", False):
+                if diag["geometry"]["max_manifold_tangent_residual"] > 1e-12:
+                    errors.append(f"{cell}: slow-manifold tangent residual")
+            if geometry_config.get("multiscale", {}).get("product_manifold_metric", False):
+                if diag["geometry"]["minimum_product_metric_eigenvalue"] <= 0.0:
+                    errors.append(f"{cell}: product manifold metric is not positive")
+            if geometry_config.get("multiscale", {}).get("regime_riemannian_pod", False):
+                if not np.isfinite(
+                    diag["geometry"]["maximum_geodesic_reconstruction_error"]
+                ):
+                    errors.append(f"{cell}: nonfinite geodesic reconstruction")
+            if mfg_config.get("wfr_strang", False):
+                if diag["mfg"]["max_wfr_strang_mass_residual"] > 1e-10:
+                    errors.append(f"{cell}: WFR Strang mass residual")
         if diag["finance_accounting"]["max_bilateral_aid_residual"] > 1e-10:
             errors.append(f"{cell}: bilateral aid residual")
         if diag["mechanism"] is not None:
@@ -587,6 +696,11 @@ def run(
                     errors.append(f"{cell}: Dirac interconnection residual")
                 if diag["energy"]["max_port_hamiltonian_residual"] > 1e-12:
                     errors.append(f"{cell}: port-Hamiltonian storage residual")
+                if geometry_config.get("energy", {}).get("port_hamiltonian_dae", False):
+                    if diag["energy"]["max_port_hamiltonian_dae_residual"] > 1e-10:
+                        errors.append(f"{cell}: port-Hamiltonian DAE residual")
+                    if diag["energy"]["max_dissipation_inequality_violation"] > 1e-10:
+                        errors.append(f"{cell}: port-Hamiltonian dissipation violation")
         if diag["hybrid"] is not None:
             hybrid_diag = diag["hybrid"]
             if hybrid_diag["max_reset_residual"] > 1e-12:
@@ -595,12 +709,19 @@ def run(
                 errors.append(f"{cell}: Filippov sliding normal residual")
             if hybrid_diag["max_hysteresis_violation"] > 0.0:
                 errors.append(f"{cell}: Filippov hysteresis violation")
+            if hybrid_diag.get("max_saltation_finite_difference_residual", 0.0) > 1e-12:
+                errors.append(f"{cell}: saltation finite-difference residual")
+            if hybrid_diag.get("saltation_nonfinite_count", 0) != 0:
+                errors.append(f"{cell}: nonfinite saltation sensitivity")
             if any(value != months for value in hybrid_diag["event_calls"].values()):
                 errors.append(f"{cell}: impulse event ledger clock mismatch")
             for surface, count in hybrid_diag["switch_count"].items():
                 hybrid_switch_totals[surface] += count
-                if hybrid_diag["terminal_regime_share"][surface] < 0.995:
-                    hybrid_nonsaturated_cells[surface] += 1
+                time_path_share = hybrid_diag["time_path_regime_share"][surface]
+                if 1.0e-6 < time_path_share < 1.0 - 1.0e-6:
+                    hybrid_dynamic_cells[surface] += 1
+                if hybrid_diag["terminal_regime_share"][surface] >= 0.995:
+                    hybrid_terminal_saturated_cells[surface] += 1
         if diag["topology"] is not None:
             topology_diag = diag["topology"]
             if topology_diag["transition_accounting_residual"] != 0:
@@ -616,14 +737,19 @@ def run(
         for horizon, horizon_diag in diag["campaign_horizons"].items():
             if horizon_diag["importance_sampling_effective_sample_size"] < 0.35 * paths:
                 errors.append(f"{cell}|{horizon}: importance ESS")
-    if hybrid_enabled:
+    formal_surface_coverage = (
+        months >= 360 and len(diagnostics) >= len(battle.CASES) * len(all_scenarios)
+    )
+    if hybrid_enabled and formal_surface_coverage:
         for surface, count in hybrid_switch_totals.items():
             if count == 0:
                 errors.append(
                     f"global Filippov {surface} surface has no dynamic state movement"
                 )
-            if hybrid_nonsaturated_cells[surface] == 0:
-                errors.append(f"global Filippov {surface} surface is permanently saturated")
+            if hybrid_dynamic_cells[surface] == 0:
+                errors.append(
+                    f"global Filippov {surface} surface has no observed on/off occupancy"
+                )
     if topology_enabled:
         if topology_active_cells == 0:
             errors.append("global topological dynamics has no nontrivial transition graph")
@@ -648,15 +774,12 @@ def run(
         if abs(decomposition - 1.0) > 1e-9:
             errors.append(f"{row['trade_scenario']}: calendar-2100 decomposition")
     if errors:
-        version = (
-            "V5.2" if (mfg_config or {}).get("advanced_graphon") else (
-            "V5.1" if (hybrid_enabled or topology_enabled) else ("V5.0" if geometry_enabled else
-            ("V4.9" if energy_enabled else ("V4.8" if mechanism_enabled else "V4.7"))
-            )
-            )
-        )
+        traceability_stem = traceability_path.stem
+        version_code = traceability_stem.split("_")[1].removeprefix("v")
+        version = f"V{version_code[0]}.{version_code[1:]}"
         failure_path = traceability_path.with_name(
-            f"taiwan_{version.lower().replace('.', '')}_runtime_validation_failure.json"
+            traceability_stem.replace("_traceability", "_runtime_validation_failure")
+            + ".json"
         )
         failure_path.write_text(json.dumps({
             "model_version": version,
@@ -666,7 +789,8 @@ def run(
             "errors": errors,
             "diagnostic_cells": len(diagnostics),
             "hybrid_switch_totals": hybrid_switch_totals,
-            "hybrid_nonsaturated_cells": hybrid_nonsaturated_cells,
+            "hybrid_dynamic_cells": hybrid_dynamic_cells,
+            "hybrid_terminal_saturated_cells": hybrid_terminal_saturated_cells,
             "topology_active_cells": topology_active_cells,
             "topology_visited_symbols": sorted(topology_visited_symbols),
             "topology_max_feedback_deviation": topology_max_feedback_deviation,

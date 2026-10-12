@@ -32,6 +32,7 @@ class HybridFilippovImpulseSystem:
     def __init__(
         self, paths: int, enabled: bool = True,
         threshold_shift: float = 0.0, control_capacity_scale: float = 1.0,
+        saltation_sensitivity: bool = True,
     ) -> None:
         self.paths = paths
         self.enabled = enabled
@@ -42,6 +43,7 @@ class HybridFilippovImpulseSystem:
         self.minimum_dwell = 2
         self.threshold_shift = float(threshold_shift)
         self.control_capacity_scale = float(control_capacity_scale)
+        self.saltation_sensitivity = bool(saltation_sensitivity)
         self.on_threshold = np.clip(
             np.array([0.34, 0.78, 0.50, 0.44]) + self.threshold_shift, 0.15, 0.95
         )[None, None, :]
@@ -62,12 +64,18 @@ class HybridFilippovImpulseSystem:
         self.max_sliding_residual = 0.0
         self.max_hysteresis_violation = 0.0
         self.switch_count = np.zeros(len(SURFACES), dtype=np.int64)
+        self.regime_active_observations = np.zeros(len(SURFACES), dtype=np.int64)
         self.sliding_observations = np.zeros(len(SURFACES), dtype=np.int64)
         self.stress_min = np.full(len(SURFACES), np.inf)
         self.stress_max = np.full(len(SURFACES), -np.inf)
         self.stress_sum = np.zeros(len(SURFACES))
         self.stress_observations = 0
         self.max_simultaneous_event_types = 0
+        self.max_saltation_gain = 1.0
+        self.max_saltation_condition = 1.0
+        self.max_saltation_finite_difference_residual = 0.0
+        self.saltation_updates = 0
+        self.saltation_nonfinite_count = 0
 
     def begin_month(self, month: int) -> None:
         if month <= self.current_month:
@@ -148,6 +156,40 @@ class HybridFilippovImpulseSystem:
             )
         self.sliding_observations += np.sum(sliding, axis=(0, 1))
 
+        # For independent scalar switching surfaces the saltation matrix is
+        # diagonal. It propagates sensitivities only; state transitions remain
+        # uniquely owned by the Filippov and impulse ledgers above.
+        denominator_saltation = np.where(
+            np.abs(v_minus) > 1.0e-8,
+            v_minus,
+            np.where(v_minus >= 0.0, 1.0e-8, -1.0e-8),
+        )
+        saltation_diagonal = 1.0 + (v_plus - v_minus) / denominator_saltation
+        saltation_diagonal = np.where(switched, saltation_diagonal, 1.0)
+        self.saltation_nonfinite_count += int(
+            np.count_nonzero(~np.isfinite(saltation_diagonal))
+        )
+        if self.saltation_sensitivity and np.any(switched):
+            selected = np.abs(saltation_diagonal[switched])
+            self.max_saltation_gain = max(
+                self.max_saltation_gain, float(np.max(selected))
+            )
+            self.max_saltation_condition = max(
+                self.max_saltation_condition,
+                float(np.max(selected) / np.maximum(np.min(selected), 1.0e-12)),
+            )
+            # Scalar finite-difference fixture of the normal jump map.
+            epsilon = 1.0e-6
+            analytical = saltation_diagonal[switched] * epsilon
+            finite = epsilon + (v_plus[switched] - v_minus[switched]) * (
+                epsilon / denominator_saltation[switched]
+            )
+            self.max_saltation_finite_difference_residual = max(
+                self.max_saltation_finite_difference_residual,
+                float(np.max(np.abs(analytical - finite))),
+            )
+            self.saltation_updates += int(np.count_nonzero(switched))
+
         premature_exit = old & (~self.regime) & (~can_exit)
         self.max_hysteresis_violation = max(
             self.max_hysteresis_violation, float(np.any(premature_exit))
@@ -157,6 +199,7 @@ class HybridFilippovImpulseSystem:
         if not self.enabled:
             lam = np.zeros_like(lam)
             self.regime[:] = False
+        self.regime_active_observations += np.sum(self.regime, axis=(0, 1))
 
         return HybridFactors(
             logistics=np.clip(1.0 - 0.20 * lam[:, :, 0], 0.70, 1.0),
@@ -280,6 +323,11 @@ class HybridFilippovImpulseSystem:
             "switch_count": dict(zip(SURFACES, self.switch_count.tolist())),
             "sliding_share": dict(zip(SURFACES, (self.sliding_observations / total).tolist())),
             "terminal_regime_share": dict(zip(SURFACES, np.mean(self.regime, axis=(0, 1)).tolist())),
+            "time_path_regime_share": dict(
+                zip(SURFACES, (self.regime_active_observations / total).tolist())
+            ),
+            "on_threshold": dict(zip(SURFACES, self.on_threshold.reshape(-1).tolist())),
+            "off_threshold": dict(zip(SURFACES, self.off_threshold.reshape(-1).tolist())),
             "stress_min": dict(zip(SURFACES, self.stress_min.tolist())),
             "stress_mean": dict(zip(
                 SURFACES,
@@ -295,4 +343,10 @@ class HybridFilippovImpulseSystem:
             "minimum_dwell_months": self.minimum_dwell,
             "threshold_shift": self.threshold_shift,
             "control_capacity_scale": self.control_capacity_scale,
+            "saltation_updates": self.saltation_updates,
+            "max_saltation_gain": self.max_saltation_gain,
+            "max_saltation_condition": self.max_saltation_condition,
+            "max_saltation_finite_difference_residual": self.max_saltation_finite_difference_residual,
+            "saltation_sensitivity": self.saltation_sensitivity,
+            "saltation_nonfinite_count": self.saltation_nonfinite_count,
         }

@@ -414,8 +414,11 @@ class MRRDCGEDQSFCState:
 class CoupledMRRDCGEDQSFCEconomicSystem(CoupledMacroEconomicSystem):
     """V5.3 economic core with explicit lagged DQ-SFC feedback."""
 
-    def __init__(self, paths: int, seed: int, scenario: str, dqsfc_enabled: bool = True):
-        super().__init__(paths, seed, scenario)
+    def __init__(
+        self, paths: int, seed: int, scenario: str, dqsfc_enabled: bool = True,
+        econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
+        super().__init__(paths, seed, scenario, econometric_draws)
         self.dqsfc_enabled = dqsfc_enabled
         self.dqsfc = MRRDCGEDQSFCState(self.cge, paths)
 

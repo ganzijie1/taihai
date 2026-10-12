@@ -1,0 +1,44 @@
+{
+  "scope": "DIAGNOSTIC_ONLY",
+  "backend": {
+    "requested": "auto",
+    "selected": "numba",
+    "numba_available": true
+  },
+  "tridiagonal": {
+    "numpy_max_error": 2.220446049250313e-16,
+    "numba_max_error": 2.220446049250313e-16,
+    "numpy_numba_gap": 0.0
+  },
+  "differential_equations": {
+    "rk4_max_error": 1.3054255454392205e-09,
+    "euler_maruyama_max_error": 0.0
+  },
+  "mfg": {
+    "backend": "numpy",
+    "mass_residual": 2.220446049250313e-16,
+    "mean_residual": 1.3466305621157026e-06,
+    "density_residual": 7.624960678750384e-06,
+    "bellman_residual": 1.5246306663274645e-05,
+    "fixed_point_iterations": 5,
+    "max_policy_iterations_used": 12,
+    "converged": true,
+    "accelerated_backend": "numba",
+    "numpy_numba_density_gap": 1.3322676295501878e-15,
+    "numpy_numba_support_gap": 0.0
+  },
+  "social_sde_jump": {
+    "fixed_seed_replay_error": 0.0,
+    "conservation_error": 2.220446049250313e-16,
+    "monthly_random_batches": 1
+  },
+  "macro": {
+    "converged": true,
+    "outer_residual": 0.0012928362416906314,
+    "outer_iterations": 4,
+    "outer_converged_path_fraction": 1.0,
+    "cge_solver_iterations": 1,
+    "dsge_solver_iterations": 34,
+    "external_account_residual": 6.194144804003338e-19
+  }
+}

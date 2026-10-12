@@ -47,9 +47,13 @@ class FourPartyEnergyNetwork:
     value for the current source, cross-border and demand capacities.
     """
 
-    def __init__(self, paths: int, seed: int, geometry_enabled: bool = False):
+    def __init__(
+        self, paths: int, seed: int, geometry_enabled: bool = False,
+        port_hamiltonian_dae: bool = False,
+    ):
         self.paths = paths
         self.geometry_enabled = bool(geometry_enabled)
+        self.port_hamiltonian_dae = bool(port_hamiltonian_dae)
         self.rng = np.random.default_rng(seed)
         domestic = np.array([PUBLIC_CALIBRATION[a]["domestic"] for a in ACTORS])
         imports = np.array([PUBLIC_CALIBRATION[a]["imports"] for a in ACTORS])
@@ -104,6 +108,9 @@ class FourPartyEnergyNetwork:
         self.max_hodge_divergence_residual = 0.0
         self.max_dirac_interconnection_residual = 0.0
         self.max_port_hamiltonian_residual = 0.0
+        self.max_port_hamiltonian_dae_residual = 0.0
+        self.max_dissipation_inequality_violation = 0.0
+        self.minimum_dissipation_rate = np.inf
 
     def current(self) -> EnergyFactors:
         return self.last_factors
@@ -265,10 +272,50 @@ class FourPartyEnergyNetwork:
         availability = np.clip(delivered / np.maximum(demand, 1e-12), 0.0, 1.0)
         unused = np.maximum(source - delivered, 0.0)
         inventory_target = np.minimum(0.62, 0.55 * self.inventory + 0.10 * unused)
-        self.inventory = np.clip(
-            0.97 * self.inventory + 0.03 * inventory_target
-            - 0.025 * np.maximum(1.0 - availability, 0.0), 0.01, 0.62
-        )
+        if self.geometry_enabled and self.port_hamiltonian_dae:
+            # Discrete-gradient port-Hamiltonian stock equation. Network-flow
+            # allocation owns bilateral transfers; this port owns replenishment
+            # and shortage withdrawals, while R is physical stock dissipation.
+            step = 1.0
+            dissipation = np.clip(
+                0.020 + 0.018 * (1.0 - self.infrastructure)
+                + 0.012 * damage[:, :, None], 0.010, 0.080
+            )
+            port_input = (
+                0.030 * inventory_target
+                - 0.025 * np.maximum(1.0 - availability, 0.0)
+            )
+            numerator = (1.0 - 0.5 * step * dissipation) * opening_inventory + step * port_input
+            denominator = 1.0 + 0.5 * step * dissipation
+            unconstrained_inventory = numerator / np.maximum(denominator, 1.0e-12)
+            self.inventory = np.clip(unconstrained_inventory, 0.01, 0.62)
+            midpoint = 0.5 * (opening_inventory + self.inventory)
+            delta = self.inventory - opening_inventory
+            dae_residual = delta - step * (port_input - dissipation * midpoint)
+            active = (unconstrained_inventory > 0.01) & (unconstrained_inventory < 0.62)
+            if np.any(active):
+                self.max_port_hamiltonian_dae_residual = max(
+                    self.max_port_hamiltonian_dae_residual,
+                    float(np.max(np.abs(dae_residual[active]))),
+                )
+            hamiltonian_delta = 0.5 * np.sum(
+                self.inventory ** 2 - opening_inventory ** 2, axis=(1, 2)
+            )
+            port_work = np.sum(midpoint * port_input, axis=(1, 2))
+            dissipated = np.sum(dissipation * midpoint ** 2, axis=(1, 2))
+            inequality = hamiltonian_delta - step * port_work
+            self.max_dissipation_inequality_violation = max(
+                self.max_dissipation_inequality_violation,
+                float(np.max(np.maximum(inequality, 0.0))),
+            )
+            self.minimum_dissipation_rate = min(
+                self.minimum_dissipation_rate, float(np.min(dissipated))
+            )
+        else:
+            self.inventory = np.clip(
+                0.97 * self.inventory + 0.03 * inventory_target
+                - 0.025 * np.maximum(1.0 - availability, 0.0), 0.01, 0.62
+            )
         if self.geometry_enabled:
             inventory_delta = self.inventory - opening_inventory
             hamiltonian_delta = 0.5 * np.sum(
@@ -329,9 +376,16 @@ class FourPartyEnergyNetwork:
             "maximum_actor_shortage": self.max_shortage,
             "bottleneck_cut_frequency": self.cut_frequency.tolist(),
             "geometry_enabled": self.geometry_enabled,
+            "port_hamiltonian_dae": self.port_hamiltonian_dae,
             "max_hodge_divergence_residual": self.max_hodge_divergence_residual,
             "max_dirac_interconnection_residual": self.max_dirac_interconnection_residual,
             "max_port_hamiltonian_residual": self.max_port_hamiltonian_residual,
+            "max_port_hamiltonian_dae_residual": self.max_port_hamiltonian_dae_residual,
+            "max_dissipation_inequality_violation": self.max_dissipation_inequality_violation,
+            "minimum_dissipation_rate": (
+                self.minimum_dissipation_rate
+                if np.isfinite(self.minimum_dissipation_rate) else 0.0
+            ),
             "mean_graph_resilience": float(np.mean(self.last_factors.graph_resilience)),
             "mean_hodge_cycle_share": float(np.mean(self.last_factors.hodge_cycle_share)),
             "source_urls": SOURCE_URLS,

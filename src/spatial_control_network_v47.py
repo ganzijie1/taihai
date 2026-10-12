@@ -23,10 +23,11 @@ class SpatialControlNetwork:
 
     def __init__(
         self, paths: int, seed: int, terrain: dict,
-        geometry_enabled: bool = False,
+        geometry_enabled: bool = False, dynamic_finsler: bool = False,
     ):
         self.paths = paths
         self.geometry_enabled = bool(geometry_enabled)
+        self.dynamic_finsler = bool(dynamic_finsler)
         self.rng = np.random.default_rng(seed)
         self.zones = 12
         self.population_weights = np.array(
@@ -74,6 +75,39 @@ class SpatialControlNetwork:
         self.control_duration = np.zeros(paths, dtype=np.int16)
         self.last_residual = 0.0
         self.last_finsler_reachability = np.ones(paths)
+        self.month = 0
+        self.max_transition_row_residual = 0.0
+        self.max_dynamic_metric_change = 0.0
+
+    def _dynamic_transition(
+        self, attacker_pnt: np.ndarray, blockade: np.ndarray,
+        damage: np.ndarray, attacker_logistics: np.ndarray,
+    ) -> np.ndarray:
+        """Pathwise directed GIS transition from a time-varying Randers metric."""
+        adjacency = self.adjacency[None, :, :]
+        gradient = self.terrain_friction[:, None] - self.terrain_friction[None, :]
+        directional = 0.18 * np.tanh(3.0 * gradient)[None, :, :]
+        seasonal = 0.06 * (1.0 + np.sin(2.0 * np.pi * self.month / 12.0))
+        disruption = (
+            0.46 * blockade + 0.30 * damage + 0.28 * (1.0 - attacker_pnt)
+            + 0.24 * (1.0 - attacker_logistics)
+        )[:, None, None]
+        base = np.where(
+            adjacency > 0.0,
+            (1.0 + 0.90 * np.maximum(gradient, 0.0))[None, :, :]
+            / np.maximum(adjacency, 1.0e-8),
+            1.0e6,
+        )
+        cost = np.maximum(base * (1.0 + disruption + seasonal) + directional, 0.0)
+        kernel = np.where(adjacency > 0.0, np.exp(-0.72 * cost), 0.0)
+        transition = kernel / np.maximum(kernel.sum(axis=2, keepdims=True), 1.0e-12)
+        residual = float(np.max(np.abs(transition.sum(axis=2) - 1.0)))
+        self.max_transition_row_residual = max(self.max_transition_row_residual, residual)
+        static = self.finsler_transition[None, :, :]
+        self.max_dynamic_metric_change = max(
+            self.max_dynamic_metric_change, float(np.max(np.abs(transition - static)))
+        )
+        return transition
 
     def update(
         self, *, aggregate_land: np.ndarray, attacker_logistics: np.ndarray,
@@ -88,7 +122,16 @@ class SpatialControlNetwork:
         if self.geometry_enabled:
             pnt = np.ones(self.paths) if attacker_pnt is None else np.clip(attacker_pnt, 0.05, 1.0)
             denied = np.zeros(self.paths) if blockade is None else np.clip(blockade, 0.0, 1.0)
-            finsler_neighbor = previous @ self.finsler_transition.T
+            if self.dynamic_finsler:
+                transition = self._dynamic_transition(
+                    pnt, denied, np.clip(damage, 0.0, 1.0),
+                    np.clip(attacker_logistics, 0.0, 1.0),
+                )
+                finsler_neighbor = np.einsum(
+                    "pi,pji->pj", previous, transition, optimize=True
+                )
+            else:
+                finsler_neighbor = previous @ self.finsler_transition.T
             reachability = np.clip(
                 (0.42 + 0.58 * attacker_logistics) * (0.55 + 0.45 * pnt)
                 * (1.0 - 0.48 * denied), 0.08, 1.0
@@ -141,6 +184,7 @@ class SpatialControlNetwork:
         self.control_duration = np.where(majority, self.control_duration + 1, 0)
         stable = self.control_duration >= 6
         self.last_residual = float(np.max(np.abs(self.zone_control - previous)))
+        self.month += 1
         return SpatialControlFactors(
             zone_control=self.zone_control.copy(),
             population_control=population_control,
@@ -161,6 +205,9 @@ class SpatialControlNetwork:
             "population_weight_residual": abs(float(self.population_weights.sum()) - 1.0),
             "administrative_weight_residual": abs(float(self.administrative_weights.sum()) - 1.0),
             "geometry_enabled": self.geometry_enabled,
+            "dynamic_finsler": self.dynamic_finsler,
             "minimum_finsler_reachability": float(np.min(self.last_finsler_reachability)),
             "graph_spectral_gap": self.graph_spectral_gap,
+            "max_dynamic_transition_row_residual": self.max_transition_row_residual,
+            "max_dynamic_metric_change": self.max_dynamic_metric_change,
         }

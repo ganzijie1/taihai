@@ -1,0 +1,32 @@
+{
+  "model_version": "V6.6-OT-SYM",
+  "status": "PASS",
+  "blocking_gaps": {},
+  "diagnostic_status": "PASS",
+  "manifest_audit": "PASS",
+  "master_clock": "same-path monthly DEDS",
+  "active_module_count": 103,
+  "weak_coupling_adapters": [],
+  "duplicate_state_owners": [],
+  "mandatory_solver_proxies": [],
+  "simulation_authorized": true,
+  "closed_feedback_loops": [
+    "random geometry->capacity OT->operations/PNT/production/finance->repair/network->random geometry",
+    "belief/FGW->MFG action->social/command/network->next-month path-conditioned belief",
+    "symplectic reachability->PNT/command->operations/damage jump->symplectic state"
+  ],
+  "selected_method_boundary": {
+    "active": [
+      "path-conditioned multilayer partial OT",
+      "capacity multicommodity dynamic OT",
+      "WFR closure",
+      "Verlet/Lie group",
+      "port-Hamiltonian shell"
+    ],
+    "theory_only": [
+      "martingale OT",
+      "rare-event bridge replacement",
+      "symplectic ROM/neural surrogate"
+    ]
+  }
+}

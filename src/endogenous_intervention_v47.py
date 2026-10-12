@@ -31,10 +31,22 @@ class EndogenousInterventionChoiceModel:
     underlying sequential choices.
     """
 
-    def __init__(self, paths: int, seed: int):
+    def __init__(
+        self, paths: int, seed: int,
+        econometric_draws: dict[str, np.ndarray] | None = None,
+    ):
         self.paths = paths
         self.rng = np.random.default_rng(seed)
         self.last_choice: InterventionChoice | None = None
+        draws = econometric_draws or {}
+        self.us_intercept_shift = np.asarray(
+            draws.get("us_intervention_shift", np.zeros(paths)), dtype=float
+        )
+        self.japan_intercept_shift = np.asarray(
+            draws.get("japan_intervention_shift", np.zeros(paths)), dtype=float
+        )
+        if self.us_intercept_shift.shape != (paths,) or self.japan_intercept_shift.shape != (paths,):
+            raise ValueError("intervention prior draws must have shape (paths,)")
 
     def probabilities(
         self, *, actor_support: np.ndarray, taiwan_readiness: np.ndarray,
@@ -56,7 +68,7 @@ class EndogenousInterventionChoiceModel:
             + 0.46 * np.log(readiness)
             + 0.58 * (continuity[:, 2] - 0.75)
             + 0.64 * (fiscal[:, 2] - 0.55) - 0.72 * stress[:, 2]
-            + common
+            + common + self.us_intercept_shift
         )
         us_direct = _sigmoid(us_latent)
 
@@ -66,7 +78,7 @@ class EndogenousInterventionChoiceModel:
             + 1.05 * (np.clip(arms_support_japan, 0.01, 0.99) - 0.55)
             + 0.72 * us_direct + 0.52 * (continuity[:, 3] - 0.75)
             + 0.55 * (fiscal[:, 3] - 0.55) - 0.78 * stress[:, 3]
-            + 0.55 * common
+            + 0.55 * common + self.japan_intercept_shift
         )
         japan_combat = _sigmoid(japan_latent)
         # Treaty/base access is distinct from direct combat. It has a hard
@@ -124,4 +136,9 @@ class EndogenousInterventionChoiceModel:
                     0.0,
                 )
             )),
+            "intercept_prior_ranges": {
+                "us": [float(np.min(self.us_intercept_shift)), float(np.max(self.us_intercept_shift))],
+                "japan": [float(np.min(self.japan_intercept_shift)), float(np.max(self.japan_intercept_shift))],
+            },
+            "intercept_identification": "scenario_prior_uncertainty; comparable intervention event panel unavailable",
         }

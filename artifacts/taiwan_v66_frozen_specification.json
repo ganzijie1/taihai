@@ -1,0 +1,51 @@
+{
+  "model_version": "V6.6-OT-SYM",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "accounting",
+      "capacity",
+      "causality",
+      "symplectic",
+      "SO(3)",
+      "port power",
+      "MFG fixed point",
+      "CGE/DSGE clearing"
+    ],
+    "ablations": [
+      "deep OT off",
+      "capacity OT read-only",
+      "symplectic feedback off",
+      "random geometry feedback off"
+    ],
+    "common_random_numbers": true
+  },
+  "hashes": {
+    "work\\information_geometry_v58.py": "15E8EDAB11FCA796EEABC6DDFB2340B75E02280CFD269A3A9E275D0C2BC8A1E4",
+    "work\\deep_optimal_transport_v66.py": "264D841C0A4D35917A1490D1CDCC523E7EA305820B9C3E36E0CF712F958A42EE",
+    "work\\continuous_multipop_mfg_v66.py": "D358EB485A3D0B74A21F8B28396B22E7E14A22D696E57D7228A3724E9B9543FE",
+    "work\\transport_symplectic_v66.py": "EF5C4598EA7D713B6DBD6C73616A5C03F0D628751772F1C1AE96561F00F56FDA",
+    "work\\hybrid_filippov_impulse_v51.py": "5B7339F3E89A6D0599D88E80FDEECF10251A1F6B58A455CB1F0AE2AF14207BB8",
+    "work\\simulate_taiwan_multidomain_v42.py": "FABFD83145D147DE09B74454DCDF05F443C0A06E73A9C333AE5346CB3ED29F34",
+    "work\\simulate_taiwan_fully_closed_v47.py": "978502AB9CD7BD006AD63FFFF89AC876B2F779BB444179A6FDD4A77CA12B8CD2",
+    "work\\simulate_taiwan_fully_closed_v62.py": "F2683DF82AC355421CCB47944E9411100FFE27A10FC4114DA4E080F89DDB46EF",
+    "work\\simulate_taiwan_fully_closed_v64.py": "7B364C59B999F6B5EF195E34DF61D1A319A191D41E3B7DFDF5A215BBFF7B509D",
+    "work\\simulate_taiwan_fully_closed_v66.py": "A48E43427385D7E28813DADD75C7933BC5D1DA2887F43ED3A472EE676945F1EA",
+    "work\\diagnostic_taiwan_v66.py": "29CE7784370CBD8C63FDFF26F96948F14A038E95690841CCD8647149E11BA2AC"
+  },
+  "diagnostic_sha256": "232D238E57868547D60DEA3C3FFBB04450316DF66F990291F23A4541DED681AF",
+  "inherited_v63_result_sha256": "FF8868E06C425A0E5BC138F0DF1AD54DD6C7B75D30072FAEADF4DD99C3F8B3BE"
+}
