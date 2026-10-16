@@ -1,0 +1,24 @@
+{
+  "model_version": "V7.6-SIGNED-POTENTIAL-SCF",
+  "status": "FROZEN",
+  "reason": "source, deterministic fixture and active-chain audits passed; no outcome run performed",
+  "hashes": {
+    "work\\online_tda_v76.py": "1D04066606FEFB9B0D864B4846D4E7C9E0AB8C2BF3DEF1E0C974BC9B63EA851D",
+    "work\\scf_signed_potential_mfg_v76.py": "59F51A964BEEF6E0E7BCD226FB46CFEFBBD3FE0FAFBA915E8633E2E2E8ED3DC8",
+    "work\\simulate_taiwan_fully_closed_v76.py": "6FA217610FA01940FDF94FFF87E2857359B50348DC7F00DB491C20E5F7FD219F",
+    "work\\diagnostic_taiwan_v76.py": "8033265CF31E106BB2D37C9CEC3128E5181F722C1E5241A4E8812C12579272A8",
+    "work\\audit_taiwan_v76.py": "EFFC9BB4D0F2E74BEC7E7736245A88D515B3552C980B6D257604DFB00410E8B1",
+    "work\\simulate_taiwan_v76_checkpointed.py": "C0668C829DD6E515321728CDFBA3A010FD28479D43AEF5F901E355B454F3B430",
+    "work\\run_v76_checkpoint_shard.py": "DD960B45D74DBE03CD0C6F80AF04DC9FCD410D747F5000DA0C36EC60D75AF511",
+    "work\\audit_taiwan_v76_results.py": "AC6B6CDE1E4DEE99F3F7C538CFA7237003F5F12B19FACBA72C3BA00DBE21796E",
+    "work\\prepare_taiwan_v76.py": "29B7AB97E0CE0A6CAC498ED8049E9158C1844F23E37AB9D222B07B3EB8990262"
+  },
+  "diagnostic_hashes": {
+    "outputs\\taiwan_v76_diagnostic_only.json": "8DD4B5D34DD10A23881A3CC809588BBA620E0555EB833A4AD3F35B8DCE884D29",
+    "outputs\\taiwan_v76_code_coupling_audit.json": "9344169ED622EE402AFFEFC00C7B0CD31DD12F81A6E4D29BE962749495B5C700",
+    "outputs\\taiwan_v76_traceability.json": "116A993D74576F5CA8AD09DA13F3A1A5B3A5A2853090CD09595047D9A030D224",
+    "outputs\\taiwan_v76_static_coupling_audit.json": "F72D9D67A2DE8C090E30EBC22E3630F7E8BB3D02510133D48AC179DF67C91FF4"
+  },
+  "simulation_executed": false,
+  "posthoc_probability_adjustment": false
+}

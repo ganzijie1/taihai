@@ -9,3 +9,14 @@ research workspace.
 
 These files are model inputs, not raw source releases. Consult the original
 OECD and CEADS terms and documentation before redistribution or downstream use.
+
+`econometrics_v55/` contains compact OECD ICIO aggregates and a World Bank
+macro panel used by the econometric calibration layer. `sectoral_v62/` contains
+the derived employment-share ledger used by the three-sector transition layer.
+The JSON/NPZ files preserve source, unit and transformation metadata; they are
+not claimed as new observations.
+
+The frozen executable tree also uses `work/gis_data/`: road geometries are from
+OpenStreetMap contributors via Overpass and remain subject to the ODbL, while
+the elevation tiles are cached public terrain inputs identified in the model's
+source ledger. Preserve attribution when redistributing derived products.

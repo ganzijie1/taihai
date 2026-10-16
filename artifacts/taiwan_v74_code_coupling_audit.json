@@ -1,0 +1,23 @@
+{
+  "model_version": "V7.4-FINSLER-CLOSED-LOOP",
+  "classification": "STATIC_COUPLING_AUDIT; no terminal probabilities",
+  "status": "PASS",
+  "checks": {
+    "all_solver_methods_present": true,
+    "wrapper_swaps_v74_class": true,
+    "wrapper_restores_class": true,
+    "runtime_gate_called": true,
+    "complete_model_gate_enforced": true,
+    "operations_export_same_path_cost": true,
+    "base_passes_cost_to_mfg": true,
+    "mfg_consumes_control_cost": true,
+    "diagnostic_passed": true,
+    "long_horizon_stress_passed": true,
+    "all_v74_modules_traced": true,
+    "heading_traceability": true,
+    "complete_manifest_gate": true,
+    "single_inventory_owner": true,
+    "no_probability_postprocessing": true
+  },
+  "blocking_gaps": []
+}

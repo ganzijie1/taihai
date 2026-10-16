@@ -1,0 +1,12 @@
+{
+  "captured_at": "2026-10-14",
+  "method": "Feishu block API; headings 1-7",
+  "actual_heading_count": 1547,
+  "classification_counts": {
+    "active": 1322,
+    "explanatory": 110,
+    "superseded": 63,
+    "theory_only": 52
+  },
+  "unreconciled_difference": 0
+}

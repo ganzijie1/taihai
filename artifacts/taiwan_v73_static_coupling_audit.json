@@ -1,0 +1,30 @@
+{
+  "model_version": "V7.3-CONTINUOUS-GRAPH",
+  "status": "PASS",
+  "diagnostic_status": "PASS",
+  "actual_heading_count": 1547,
+  "reconciled_heading_count": 1547,
+  "coverage_percent": 100.0,
+  "blocking_gaps": [],
+  "simulation_authorized": true,
+  "selected_method_boundary": {
+    "active": [
+      "metric-graph finite-volume transport",
+      "telegraph communication",
+      "continuous corridor control",
+      "enterprise-financial Graphon",
+      "sparse finite rollback"
+    ],
+    "retained_discrete": [
+      "physical inventory",
+      "hard capacity and maximum flow",
+      "protection schedule",
+      "terminal competing risks"
+    ],
+    "excluded": [
+      "real facility coordinates",
+      "classified capacities",
+      "post-hoc terminal probability multipliers"
+    ]
+  }
+}

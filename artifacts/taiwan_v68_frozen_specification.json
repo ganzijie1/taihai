@@ -1,0 +1,59 @@
+{
+  "model_version": "V6.8-FA-GPU",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "runtime_environment": {
+    "distribution": "Ubuntu-24.04 WSL2",
+    "python": "3.12",
+    "jax": "0.4.30 CUDA12",
+    "torch": "2.6.0+cu124",
+    "gpu": "NVIDIA GeForce RTX 3060 12GB",
+    "wsl_memory_limit_gb": 10
+  },
+  "solver_selection": {
+    "cge": "JAX matrix-free Newton-Krylov",
+    "dsge": "JAX exact-JVP Newton-Krylov",
+    "mfg_hjb": "Numba batched policy iteration",
+    "mfg_fp": "PyTorch CUDA conservative finite volume",
+    "elliptic_diagnostic": "geometric multigrid"
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "all inherited V6.7 accounting and equilibrium checks",
+      "weak mass and positivity",
+      "Graphon row normalization",
+      "MFG and macro fixed-point residuals",
+      "path-space likelihood and empirical-measure mass"
+    ],
+    "common_random_numbers": true,
+    "v67_outcome_equivalence_required": true
+  },
+  "hashes": {
+    "work/accelerated_solver_infrastructure.py": "ACAE22B59F7E70381779F31399BCE8BE411855583D2B34E3110C554C592B6D60",
+    "work/jax_equilibrium_solvers.py": "77771AD648363BAF0F71EEACE8814C6466896FBB0DB0B469E95763C9C7926EAF",
+    "work/fp_solvers_v52.py": "B013FBB2EF15D3AA13C25C812AB13C54A2E84453A880D699B1B96D6C7E23D88F",
+    "work/functional_analysis_v68.py": "A7FB56A273B659A4B2BABAFA7E4637109B9887CD9AC89C4F04D6835AF43B7ADE",
+    "work/simulate_taiwan_fully_closed_v68.py": "62169B059BCB5FF327FCBB5B2A346D7E02B204F362AA636E3D93D1FE173BAE86",
+    "work/simulate_taiwan_v68_checkpointed.py": "605B14507C1FBA7F695BE980D23F3C648F039729F6F12C6587F2788D596F8AA8",
+    "work/diagnostic_taiwan_v68.py": "11424ABBE179E6E7DDCD9E533FDC83E3EB3A799A2AFE97275F8C2C778B0585F3"
+  },
+  "diagnostic_hashes": {
+    "outputs/wsl_jax_cuda_diagnostic.json": "981450C54ED024A1BE111EDB42B4CA6D82A459528F4BABAFAD74BE5E1717C933",
+    "outputs/advanced_solver_infrastructure_diagnostic.json": "C687961E35A3192D693048862D99C6984D9153BACE17D6EB387363D42F1E9B25",
+    "outputs/taiwan_v52_diagnostic_only.json": "0D6CEE8A9C879EE778FBEFA2FF0C1F83ED325AAA0399E50DC1EC5379B8F94078",
+    "outputs/taiwan_v68_functional_diagnostic.json": "3C5858B720DA3B88ACEACA2529819670D37187BD866CF3D38B309D249DF3F0BD"
+  },
+  "auditor_sha256": "F89059534923D452C0017841AA6172AED469FF3D7824767F27EF3C7758FBC234"
+}

@@ -1,0 +1,16 @@
+{
+  "model_version": "V7.4-FINSLER-CLOSED-LOOP",
+  "status": "PASS",
+  "main_document_id": "UEnMdV2AGoaAuKxAsSwcg563nSb",
+  "main_document_revision": 309,
+  "main_document_pages": 6,
+  "main_document_blocks": 2584,
+  "main_document_headings": 363,
+  "main_document_equations": 1097,
+  "known_broken_formula_pattern_count": 0,
+  "last_heading": "38.6 介入概率加权总体结果",
+  "method_document_id": "WEtfd2BcEoohV3x5ye7cmrScnxd",
+  "method_document_revision": 24,
+  "result_sha256": "4B2636C214171D4E3CA80EDE7C5FE1066E86E7F57685CC5606D873B530D3C74F",
+  "note": "The pre-run frozen heading snapshot contained 356 main-document headings. Seven V7.4 post-run headings were appended after the frozen simulation completed."
+}

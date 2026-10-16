@@ -1,0 +1,37 @@
+{
+  "classification": "DIAGNOSTIC_ONLY; no outcome probabilities",
+  "status": "PASS",
+  "checks": {
+    "martingale_projection_active": true,
+    "martingale_residual": true,
+    "probability_simplex": true,
+    "nonnegative_probabilities": true,
+    "financial_feedback_ablation": true,
+    "conformal_radius_active": true,
+    "conformal_components_nonnegative": true
+  },
+  "martingale_ot": {
+    "scope": "risk-neutral asset-price distribution only",
+    "method": "discrete KL I-projection with discounted martingale constraint",
+    "same_path_financial_feedback": true,
+    "projection_months": 18,
+    "max_martingale_residual": 4.440892098500626e-16,
+    "max_probability_residual": 2.220446049250313e-16,
+    "max_negative_probability": 0.0,
+    "mean_relative_entropy": 0.0005102870123521945,
+    "mean_downside_wedge": 0.039182059413942066
+  },
+  "conformal_dro": {
+    "observation_radius": 0.04865474990368586,
+    "parameter_radius": 0.00011537018818041922,
+    "structure_radius": 0.014920626678696087,
+    "updates": 8,
+    "causal_block_calibration": true
+  },
+  "credit_ablation_max_abs_delta": 0.006379753638802943,
+  "rom_selection": {
+    "status": "excluded_not_candidate",
+    "reason": "full-order symplectic core has only 3 q + 3 p states per actor; reduction does not address the measured CGE/DSGE/MFG bottleneck",
+    "active_replacement": "full-order Stormer-Verlet and SO(3) Lie-group update"
+  }
+}

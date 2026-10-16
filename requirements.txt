@@ -11,6 +11,7 @@ requests>=2.31
 torch>=2.2
 torchdiffeq>=0.2.4
 geomloss>=0.2.6
+POT>=0.9.7
 
 # Optional accelerated equilibrium backend
 jax>=0.4.28

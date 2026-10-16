@@ -1,0 +1,40 @@
+{
+  "model_version": "V7.3-CONTINUOUS-GRAPH",
+  "classification": "POSTRUN_REPORTING_TRACEABILITY; does not alter the frozen simulation specification or probabilities",
+  "created_at": "2026-10-14",
+  "frozen_specification": "outputs/taiwan_v73_frozen_specification.json",
+  "result_audit": "outputs/taiwan_v73_result_audit.json",
+  "result_summary": "outputs/taiwan_v73_result_summary.json",
+  "graph_document": {
+    "document_id": "V9f9dUVgroX9Zuxq3XxccH0tnlh",
+    "url": "https://my.feishu.cn/docx/V9f9dUVgroX9Zuxq3XxccH0tnlh",
+    "headings": [
+      {"block_id": "doxcnNrjXXuJkC9UNMzbKXMP4hb", "text": "24. V7.3 连续图论实现、完整仿真与结果审计", "module_ids": ["v73_metric_graph_transport", "v73_telegraph_control", "v73_enterprise_financial_graphon", "v73_sparse_continuum_validation"]},
+      {"block_id": "doxcnrt1juzP421OPgEACdWMzNb", "text": "24.1 实际实现", "module_ids": ["v73_metric_graph_transport", "v73_telegraph_control", "v73_enterprise_financial_graphon"]},
+      {"block_id": "doxcnkSua3wLbpKF4v91VKVsjWb", "text": "24.2 同路径闭环与所有权边界", "module_ids": ["v73_metric_graph_transport", "v73_telegraph_control"]},
+      {"block_id": "doxcnma7Qoqzrdirt8y242jp7bg", "text": "24.3 数值验证", "module_ids": ["v73_sparse_continuum_validation"]},
+      {"block_id": "doxcn43g4EMa7GxBGbO2otDbf3b", "text": "24.4 正式仿真设计", "artifacts": ["outputs/taiwan_v73_simulation.json", "outputs/taiwan_v73_result_audit.json"]},
+      {"block_id": "doxcnVhR15ccejK7h7n5kV9hHYg", "text": "24.5 条件广泛控制率", "artifacts": ["outputs/taiwan_v73_results.csv", "outputs/taiwan_v73_result_summary.json"]},
+      {"block_id": "doxcng27mt08xAYUEUWDLAoHPbe", "text": "24.6 长期竞争风险与消融解释", "artifacts": ["outputs/taiwan_v73_result_summary.json"]},
+      {"block_id": "doxcn8sIXERcsLbWORkgU6eRilb", "text": "24.7 解释边界与可复现产物", "artifacts": ["outputs/taiwan_v73_traceability.json", "outputs/taiwan_v73_frozen_specification.json"]}
+    ]
+  },
+  "main_document": {
+    "document_id": "UEnMdV2AGoaAuKxAsSwcg563nSb",
+    "url": "https://my.feishu.cn/docx/UEnMdV2AGoaAuKxAsSwcg563nSb",
+    "headings": [
+      {"block_id": "doxcngQKSENlhuOTgdXiT7atg5e", "text": "附录：V7.3 连续图论闭环与正式仿真"},
+      {"block_id": "doxcnH2KiIG2cjPiDJURAhMG5Bc", "text": "A.1 升级内容"},
+      {"block_id": "doxcnZAinr5VrlzfSL6RaCRiXgP", "text": "A.2 数值门禁"},
+      {"block_id": "doxcn5zaTMZq5jJFuSTwDX4szcg", "text": "A.3 30 年条件广泛控制率"},
+      {"block_id": "doxcn6ME0DnZ6YdN0RtmAEjliDe", "text": "A.4 2026—2100 竞争风险"},
+      {"block_id": "doxcnNyoIsjnHhynudXGVXuSEs9", "text": "A.5 结果解释"}
+    ]
+  },
+  "formula_validation": {
+    "equation_element_count": 7,
+    "invalid_formula_blocks": 0,
+    "validated_by": "Feishu block API element inspection"
+  },
+  "posthoc_probability_adjustment": false
+}

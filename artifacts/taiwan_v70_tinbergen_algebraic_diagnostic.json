@@ -1,0 +1,140 @@
+{
+  "classification": "DIAGNOSTIC_ONLY; no outcome probabilities",
+  "status": "PASS",
+  "checks": {
+    "full_target_tool_rank": true,
+    "reachability_gate_active": true,
+    "strategy_same_path_ablation": true,
+    "control_simplex": true,
+    "certifiable_barrier": true,
+    "polynomial_filter_active_on_registered_boundary": true,
+    "identifiability_computed": true,
+    "multiple_equilibrium_diagnostic_active": true,
+    "tropical_same_path_ablation": true,
+    "tropical_min_plus_identity": true,
+    "tropical_bottleneck_simplex": true,
+    "tropical_switch_surface_observed": true,
+    "macro_adjustment_clock": true,
+    "asymmetric_cost_active": true,
+    "macro_same_path_ablation": true,
+    "no_probability_adjustment": true
+  },
+  "strategy": {
+    "months": 12,
+    "reachability_enabled": true,
+    "algebraic_filter_enabled": true,
+    "tropical_enabled": true,
+    "reachability_gate_months": 12,
+    "safety_filter_months": 0,
+    "uncertifiable_path_months": 0,
+    "minimum_local_response_rank": 4,
+    "maximum_local_condition_number": 23.389081916674325,
+    "maximum_unreachable_target_residual": 0.009533307030941646,
+    "identification_rank": 5,
+    "identification_condition_number": 923499.729435537,
+    "multistable_path_months": 384,
+    "last_multistable_share": 1.0,
+    "minimum_polynomial_barrier": 0.27854988586965623,
+    "maximum_barrier_violation": 0.0,
+    "maximum_simplex_residual": 2.220446049250313e-16,
+    "mean_reachability_gate": 0.7510835923790208,
+    "mean_candidate_adjustment_cost": 0.0022226953285729802,
+    "mean_tropical_bottleneck": 0.13346801312215228,
+    "tropical_bottleneck_types": [
+      "stock",
+      "economic_capacity",
+      "command",
+      "support"
+    ],
+    "tropical_type_shares": [
+      0.75,
+      0.0,
+      0.0,
+      0.25
+    ],
+    "tropical_switches": 32,
+    "tropical_near_switch_surface_share": 0.08333333333333333,
+    "mean_tropical_first_second_gap": 0.15743636363636362,
+    "mean_max_plus_parallel_relief": 0.16050773774600066,
+    "maximum_tropical_min_identity_residual": 0.0,
+    "terminal_probability_adjustment": false
+  },
+  "registered_boundary_probe": {
+    "months": 1,
+    "reachability_enabled": true,
+    "algebraic_filter_enabled": true,
+    "tropical_enabled": true,
+    "reachability_gate_months": 1,
+    "safety_filter_months": 1,
+    "uncertifiable_path_months": 0,
+    "minimum_local_response_rank": 4,
+    "maximum_local_condition_number": 29.91899353343869,
+    "maximum_unreachable_target_residual": 0.007778888788474299,
+    "identification_rank": 1,
+    "identification_condition_number": 1.0,
+    "multistable_path_months": 32,
+    "last_multistable_share": 1.0,
+    "minimum_polynomial_barrier": 1.804092524926304e-06,
+    "maximum_barrier_violation": 0.0,
+    "maximum_simplex_residual": 2.220446049250313e-16,
+    "mean_reachability_gate": 0.4161376641740013,
+    "mean_candidate_adjustment_cost": 0.0024050433768148557,
+    "mean_tropical_bottleneck": 0.21905798130281975,
+    "tropical_bottleneck_types": [
+      "stock",
+      "economic_capacity",
+      "command",
+      "support"
+    ],
+    "tropical_type_shares": [
+      1.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "tropical_switches": 0,
+    "tropical_near_switch_surface_share": 1.0,
+    "mean_tropical_first_second_gap": 0.0,
+    "mean_max_plus_parallel_relief": 0.15072476628524753,
+    "maximum_tropical_min_identity_residual": 0.0,
+    "terminal_probability_adjustment": false
+  },
+  "macro": {
+    "months": 8,
+    "enabled": true,
+    "mean_monthly_cost": 6.304484541701167e-05,
+    "maximum_monthly_cost": 0.00013640620584575225,
+    "maximum_real_input_wedge": 0.002452299892922283,
+    "mean_cumulative_cost_by_actor": [
+      0.0004599714845972104,
+      0.000892474662870957,
+      0.0002887865383966282,
+      0.0003762023674795776
+    ],
+    "expansion_coefficients": [
+      0.74,
+      0.92,
+      0.58,
+      0.66
+    ],
+    "contraction_coefficients": [
+      1.05,
+      1.18,
+      0.78,
+      0.86
+    ],
+    "identification": "bounded scenario priors; ablation required",
+    "terminal_probability_adjustment": false
+  },
+  "macro_convergence": {
+    "nonconverged_months": 0,
+    "max_outer_residual": 0.002998031995095185,
+    "max_cge_solver_residual": 0.0010164747438929605,
+    "max_dsge_solver_residual": 0.00020263417612446832
+  },
+  "common_random_number_ablation": {
+    "maximum_control_delta": 0.047791469060846414,
+    "maximum_tropical_control_delta": 0.04390373291250138,
+    "maximum_gdp_factor_delta": 0.004586069509582624
+  }
+}

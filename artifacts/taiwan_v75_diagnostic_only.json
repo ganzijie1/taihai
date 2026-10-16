@@ -1,0 +1,89 @@
+{
+  "model_version": "V7.5-HYPERGRAPH-MINSKY-FINANCE",
+  "classification": "DIAGNOSTIC_ONLY; no Monte Carlo aggregation, scenario ranking or outcome probabilities",
+  "status": "PASS",
+  "hypergraph_mfg": {
+    "status": "PASS",
+    "checks": {
+      "state_shape": true,
+      "action_shape": true,
+      "major_shape": true,
+      "finite_fields": true,
+      "finite_rollback_shapes": true,
+      "finite_subsample_exercised": true,
+      "finite_rollback_error": true,
+      "kernel_rows": true,
+      "positive_head_coverage": true,
+      "higher_order_active": true,
+      "not_clique_equivalent": true,
+      "no_terminal_adjustment": true
+    },
+    "diagnostics": {
+      "enabled": true,
+      "layers": [
+        "information",
+        "economic",
+        "identity",
+        "casualty"
+      ],
+      "nodes": 16,
+      "directed_hyperedges": 16,
+      "hyperedge_labels": [
+        "within_china",
+        "within_taiwan",
+        "within_united_states",
+        "within_japan",
+        "cohort_18_29",
+        "cohort_30_49",
+        "cohort_50_64",
+        "cohort_65_plus",
+        "directed_triad_0",
+        "directed_triad_1",
+        "directed_triad_2",
+        "directed_triad_3",
+        "intergenerational_china",
+        "intergenerational_taiwan",
+        "intergenerational_united_states",
+        "intergenerational_japan"
+      ],
+      "pairwise_graphon_share": 0.6799999999999999,
+      "higher_order_share": 0.32,
+      "uncertainty_log_scale": 0.05,
+      "weight_updates": 1,
+      "field_evaluations": 3,
+      "max_incidence_residual": 0.0,
+      "max_hypergraph_field": 0.9293397871669453,
+      "max_higher_order_contribution": 0.03421712903968799,
+      "max_clique_rollback_error": 0.023883726387509463,
+      "major_minor_coupling": "major actions gate directed hyperedge fields inside each fixed-point iteration",
+      "non_pairwise_mechanisms": [
+        "tail-group conditional mean",
+        "within-hyperedge dispersion penalty",
+        "state-action cross-channel synergy",
+        "major-player endogenous edge gate"
+      ],
+      "hard_capacity_owner": "specialized operational network solvers",
+      "terminal_probability_adjustment": false
+    }
+  },
+  "quantitative_finance": {
+    "status": "PASS",
+    "checks": {
+      "financing_mass": true,
+      "nonnegative_financing_share": true,
+      "finite_dscr": true,
+      "clearing_bounds": true,
+      "partial_clearing_exercised": true,
+      "clearing_residual": true,
+      "regime_mass": true,
+      "positive_credit_intensity": true
+    },
+    "diagnostics": {
+      "max_financing_mass_residual": 2.220446049250313e-16,
+      "max_clearing_residual": 3.126526815222519e-11,
+      "max_regime_mass_residual": 0.0,
+      "mean_dscr": 1.8894912428999195,
+      "mean_clearing_fraction": 0.8309808561280976
+    }
+  }
+}

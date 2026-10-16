@@ -1,0 +1,19 @@
+{
+  "model_version": "V7.3-CONTINUOUS-GRAPH",
+  "status": "PASS",
+  "checks": {
+    "checkpoint_count": true,
+    "scenario_case_cartesian_product": true,
+    "single_current_freeze_hash": true,
+    "conditional_row_count": true,
+    "diagnostic_cell_count": true,
+    "all_probability_outputs_finite": true,
+    "all_probability_outputs_bounded": true,
+    "all_continuous_graph_runtime_gates": true,
+    "merged_checkpoint_contract_cell_count": true,
+    "functional_analysis_is_per_checkpoint_template": true,
+    "no_probability_postprocessing": true
+  },
+  "diagnostic_errors": [],
+  "result_sha256": "EE543DC10F8207FD41E8CAA958179F266FC2903C3940FBBAC0F97B8DBC0FB74C"
+}

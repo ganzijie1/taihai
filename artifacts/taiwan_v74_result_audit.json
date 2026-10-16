@@ -1,0 +1,15 @@
+{
+  "model_version": "V7.4-FINSLER-CLOSED-LOOP",
+  "status": "PASS",
+  "checks": {
+    "conditional_row_count": true,
+    "diagnostic_cell_count": true,
+    "all_probability_outputs_finite": true,
+    "all_probability_outputs_bounded": true,
+    "all_finsler_runtime_gates": true,
+    "complete_model_gate": true,
+    "runtime_validation": true
+  },
+  "diagnostic_errors": [],
+  "result_sha256": "4B2636C214171D4E3CA80EDE7C5FE1066E86E7F57685CC5606D873B530D3C74F"
+}

@@ -1,0 +1,33 @@
+{
+  "model_version": "V7.4-FINSLER-CLOSED-LOOP",
+  "status": "PASS",
+  "diagnostic_status": "PASS",
+  "stress_status": "PASS",
+  "enumerated_main_document_heading_count": 356,
+  "inherited_all_document_heading_count": 1547,
+  "finsler_heading_matches": 3,
+  "coverage_percent": 100.0,
+  "blocking_gaps": [],
+  "simulation_authorized": true,
+  "selected_method_boundary": {
+    "active": [
+      "Randers directional cost",
+      "Eikonal shortest arrival",
+      "Finsler-ranked hard flow",
+      "path delay",
+      "same-path MFG action cost"
+    ],
+    "retained_discrete": [
+      "physical inventory",
+      "hard capacity",
+      "queue ownership",
+      "terminal competing risks"
+    ],
+    "excluded": [
+      "real facility coordinates",
+      "classified capacities",
+      "operational target routes",
+      "post-hoc terminal probability multipliers"
+    ]
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "classification": "DIAGNOSTIC_ONLY; probabilities omitted; small-sample large-deviation normalization gate not evaluated",
+  "status": "PASS",
+  "scenario": "和平基线",
+  "case": "timely_full",
+  "paths": 8,
+  "months": 60,
+  "strategy": {
+    "months": 60,
+    "reachability_enabled": true,
+    "algebraic_filter_enabled": true,
+    "tropical_enabled": true,
+    "reachability_gate_months": 60,
+    "safety_filter_months": 0,
+    "uncertifiable_path_months": 0,
+    "minimum_local_response_rank": 4,
+    "maximum_local_condition_number": 501.8630795244636,
+    "maximum_unreachable_target_residual": 0.013926478730332354,
+    "identification_rank": 6,
+    "identification_condition_number": 93611.46160599682,
+    "multistable_path_months": 1810,
+    "last_multistable_share": 0.78125,
+    "minimum_polynomial_barrier": 0.3992247425219244,
+    "maximum_barrier_violation": 0.0,
+    "maximum_simplex_residual": 2.220446049250313e-16,
+    "mean_reachability_gate": 0.8336953086689786,
+    "mean_candidate_adjustment_cost": 0.0024161520145121688,
+    "mean_tropical_bottleneck": 0.03522479337525687,
+    "tropical_bottleneck_types": [
+      "stock",
+      "economic_capacity",
+      "command",
+      "support"
+    ],
+    "tropical_type_shares": [
+      0.029166666666666667,
+      0.953125,
+      0.0,
+      0.017708333333333333
+    ],
+    "tropical_switches": 40,
+    "tropical_near_switch_surface_share": 0.08385416666666666,
+    "mean_tropical_first_second_gap": 0.26173085612283725,
+    "mean_max_plus_parallel_relief": 0.16992673757113916,
+    "maximum_tropical_min_identity_residual": 0.0,
+    "terminal_probability_adjustment": false
+  },
+  "macro_adjustment": {
+    "months": 60,
+    "enabled": true,
+    "mean_monthly_cost": 6.703232283832776e-05,
+    "maximum_monthly_cost": 0.001083700102629609,
+    "maximum_real_input_wedge": 0.019317579148329544,
+    "mean_cumulative_cost_by_actor": [
+      0.005398889363816203,
+      0.004996825820864016,
+      0.0020888972592852622,
+      0.0036031450372331847
+    ],
+    "expansion_coefficients": [
+      0.74,
+      0.92,
+      0.58,
+      0.66
+    ],
+    "contraction_coefficients": [
+      1.05,
+      1.18,
+      0.78,
+      0.86
+    ],
+    "identification": "bounded scenario priors; ablation required",
+    "terminal_probability_adjustment": false
+  },
+  "functional_analysis": {
+    "weak_mass_residual": 6.661338147750939e-16,
+    "minimum_density": 4.0595129003333327e-23,
+    "graphon_row_residual": 3.3306690738754696e-16,
+    "graphon_markov_spectral_radius": 1.0,
+    "mfg_fixed_point_residual": 0.00013764553732275317,
+    "mfg_empirical_residual_contraction": 0.2760224740207366,
+    "macro_outer_residual": 0.0029991784493616502,
+    "macro_cge_residual": 0.0012128869270700005,
+    "macro_dsge_residual": 0.00018036337523791302,
+    "rare_event_likelihood_residual": 1.1102230246251565e-16,
+    "rare_event_empirical_mass_residual": 0.0,
+    "all_values_finite": true,
+    "passed": true,
+    "scope": "read_only_validation",
+    "probability_adjustment": false,
+    "semigroup_note": "The contraction quotient is an empirical fixed-point residual ratio, not a claimed generator spectral bound.",
+    "graphon_note": "The radius equals one only for the implemented nonnegative row-stochastic Markov kernel; the row residual is audited."
+  },
+  "macro_convergence": {
+    "nonconverged_months": 0,
+    "max_outer_residual": 0.0029991784493616502,
+    "max_cge_solver_residual": 0.0012128869270700005,
+    "max_dsge_solver_residual": 0.00018036337523791302
+  },
+  "inherited_runtime_validation": "TAIWAN_V51_RUNTIME_VALIDATION: PASS"
+}

@@ -1,0 +1,23 @@
+{
+  "model_version": "V7.2-ALGEBRAIC-DISCRETE-GRAPH",
+  "status": "PASS",
+  "diagnostic_status": "PASS",
+  "actual_heading_count": 1533,
+  "reconciled_heading_count": 1533,
+  "coverage_percent": 100.0,
+  "blocking_gaps": [],
+  "simulation_authorized": true,
+  "selected_method_boundary": {
+    "active": [
+      "effective resistance, Kirchhoff index and matrix-tree redundancy",
+      "directed arborescence, weighted nonbacktracking spectrum and signed balance",
+      "orthonormal quotient coarsening and interlacing audit",
+      "temporal paths, exact small-graph cuts and edge-disjoint survivability",
+      "exact finite matroid/conflict protection schedule and treewidth branch"
+    ],
+    "theory_only": [
+      "identified real facility graph and classified wartime capacities",
+      "large-graph branch-decomposition solver; current exact treewidth is three"
+    ]
+  }
+}

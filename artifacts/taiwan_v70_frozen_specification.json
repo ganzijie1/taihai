@@ -1,0 +1,62 @@
+{
+  "model_version": "V7.0-TINBERGEN-ALGEBRAIC",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "runtime_environment": {
+    "distribution": "Ubuntu-24.04 WSL2",
+    "python": "3.12",
+    "jax": "0.4.30 CUDA12",
+    "torch": "2.6.0+cu124",
+    "gpu": "NVIDIA GeForce RTX 3060 12GB",
+    "wsl_memory_limit_gb": 10
+  },
+  "solver_selection": {
+    "cge": "JAX matrix-free Newton-Krylov",
+    "dsge": "JAX exact-JVP Newton-Krylov",
+    "mfg_hjb": "Numba batched policy iteration",
+    "mfg_fp": "PyTorch CUDA conservative finite volume",
+    "elliptic_diagnostic": "geometric multigrid"
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "all inherited V6.9 gates",
+      "target-tool rank and condition",
+      "control simplex",
+      "certifiable polynomial barrier",
+      "algebraic identification",
+      "asymmetric cost activity",
+      "same-path pre-transition feedback"
+    ],
+    "ablations": [
+      "reachability and algebraic filters off",
+      "tropical min-plus/max-plus gate off",
+      "asymmetric macro adjustment off"
+    ],
+    "common_random_numbers": true,
+    "posthoc_probability_adjustment": false
+  },
+  "hashes": {
+    "work\\functional_analysis_v68.py": "45334591A3029FC4D626C9096FC7F812DA168BAEA4A3CDB3E7913D5E786B520A",
+    "work\\tinbergen_algebraic_v70.py": "23C5DBE269269C6700EF65FAAC03584E54700FB270E5F1418346B56A4D0D1863",
+    "work\\simulate_taiwan_fully_closed_v70.py": "38B7D9F6F70765E398F1BA5103BA5EBEBEEF6642AA1668AC373DE498EAE4A94B",
+    "work\\simulate_taiwan_v70_checkpointed.py": "478C4B05EF72AF9E72C0C7CF43FB748CF3EA5146EED8D56F87E6185C9B31433A",
+    "work\\diagnostic_taiwan_v70.py": "C6CD74EA73D8E8E9D02837328EE72ACF82D9EC7B22F50FFCED8270CF4224467F"
+  },
+  "diagnostic_hashes": {
+    "outputs/taiwan_v70_tinbergen_algebraic_diagnostic.json": "C5EB8B50C3B725A551C8BA395E12460F10F36C1D023AFB9D7763422C29766C61",
+    "outputs/taiwan_v70_end_to_end_diagnostic.json": "4B8CAB148126844A584E7E10F638018F2B6E0524B36ECC7A3EE52B533A757B88"
+  },
+  "auditor_sha256": "F89059534923D452C0017841AA6172AED469FF3D7824767F27EF3C7758FBC234"
+}

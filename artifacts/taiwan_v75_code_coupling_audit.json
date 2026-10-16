@@ -1,0 +1,23 @@
+{
+  "model_version": "V7.5-HYPERGRAPH-MINSKY-FINANCE",
+  "classification": "STATIC_COUPLING_AUDIT; no outcome simulation",
+  "status": "PASS",
+  "checks": {
+    "diagnostic_only_passed": true,
+    "finance_methods_present": true,
+    "hypergraph_methods_present": true,
+    "wrapper_replaces_mfg_on_active_chain": true,
+    "wrapper_replaces_finance_on_active_chain": true,
+    "wrapper_restores_both_classes": true,
+    "complete_model_gate_precedes_run": true,
+    "runtime_validation_called": true,
+    "finance_changes_current_factors": true,
+    "finance_has_no_terminal_adjustment": true,
+    "hypergraph_inside_fixed_point_operator": true,
+    "hypergraph_is_not_fixed_clique_proxy": true,
+    "finite_rollback_includes_hyperedges": true,
+    "hard_capacity_ownership_preserved": true,
+    "no_outcome_artifact_created": true
+  },
+  "blocking_gaps": []
+}

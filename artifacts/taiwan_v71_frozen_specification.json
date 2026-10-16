@@ -1,0 +1,68 @@
+{
+  "model_version": "V7.1-COMBINATORIAL-NETWORK",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "runtime_environment": {
+    "distribution": "Ubuntu-24.04 WSL2",
+    "python": "3.12",
+    "jax": "0.4.30 CUDA12",
+    "torch": "2.6.0+cu124",
+    "gpu": "NVIDIA GeForce RTX 3060 12GB",
+    "wsl_memory_limit_gb": 10
+  },
+  "solver_selection": {
+    "cge": "JAX matrix-free Newton-Krylov",
+    "dsge": "JAX exact-JVP Newton-Krylov",
+    "mfg_hjb": "Numba batched policy iteration",
+    "mfg_fp": "PyTorch CUDA conservative finite volume",
+    "elliptic_diagnostic": "geometric multigrid"
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "all inherited V7.0 gates",
+      "shared-capacity feasibility",
+      "stock-flow accounting",
+      "matching feasibility",
+      "max-flow/min-cut",
+      "Menger connectivity",
+      "capacity monotonicity",
+      "pipeline nonnegativity",
+      "cascade convergence",
+      "protection budget"
+    ],
+    "ablations": [
+      "complete V7.1 versus inherited V7.0 operational allocator",
+      "time-expanded pipeline off",
+      "matching and recovery off",
+      "hypergraph complementarity off",
+      "cascade fixed point off"
+    ],
+    "common_random_numbers": true,
+    "posthoc_probability_adjustment": false
+  },
+  "hashes": {
+    "work\\operational_constraints_v47.py": "A50D678C5CE769512CEE125EFFCD47CDE67211960473AC018107673057CFD36B",
+    "work\\combinatorial_network_v71.py": "5B0A6A58873E9453FA2CADEF32BB55F567B5C1E8C54446DA2CB8BFD9A815D40A",
+    "work\\simulate_taiwan_fully_closed_v71.py": "A42309219F18A9A1E7D84C5AD8B3A2EBF46596D3C2EAB239030B4B2907DE3E3B",
+    "work\\simulate_taiwan_v71_checkpointed.py": "3498409DE1181578A29EB3B801E17BE966B4A066BD8E7753F066865C11463A15",
+    "work\\diagnostic_taiwan_v71.py": "DC4345C25D5F136FA7EA13275337259AE999110D95361A79497D298453B4C375",
+    "work\\audit_taiwan_v71.py": "0D31940BED02BC3C7F49D19EA2C05F00F6806B1E5985C770A6FB3D9A705E812C"
+  },
+  "diagnostic_hashes": {
+    "outputs/taiwan_v71_combinatorial_network_diagnostic.json": "5A7B21EB9B0BE65578561E82E5A0A35F7119A7F4CA963C5D20DE78CBB7AE4934",
+    "outputs/taiwan_v71_code_coupling_audit.json": "453E6E9469FCEC4457BACF1B8641B645B1767CE07A38E5CBCC129937BDB54102"
+  },
+  "auditor_sha256": "F89059534923D452C0017841AA6172AED469FF3D7824767F27EF3C7758FBC234"
+}

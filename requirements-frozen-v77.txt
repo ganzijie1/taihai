@@ -1,0 +1,10 @@
+numpy==1.26.4
+matplotlib==3.8.4
+numba==0.60.0
+scipy==1.13.1
+pyamg==5.3.0
+POT==0.9.7.post1
+geomloss==0.3.1
+jax==0.4.30
+jaxlib==0.4.30
+ml-dtypes==0.4.1

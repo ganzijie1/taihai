@@ -1,0 +1,55 @@
+{
+  "model_version": "V7.1-COMBINATORIAL-NETWORK",
+  "status": "PASS",
+  "blocking_gaps": {},
+  "diagnostic_status": "PASS",
+  "manifest_audit": "PASS",
+  "master_clock": "same-path monthly DEDS",
+  "active_module_count": 113,
+  "weak_coupling_adapters": [],
+  "duplicate_state_owners": [],
+  "mandatory_solver_proxies": [],
+  "simulation_authorized": true,
+  "closed_feedback_loops": [
+    "random geometry->capacity OT->operations/PNT/production/finance->repair/network->random geometry",
+    "belief/FGW->MFG action->social/command/network->next-month path-conditioned belief",
+    "symplectic reachability->PNT/command->operations/damage jump->symplectic state",
+    "state-dependent path risk->pre-registered mixture mode->jump process->campaign/economic/social/political states->rare-set/action ledger->likelihood-weighted terminal estimator"
+  ],
+  "selected_method_boundary": {
+    "active": [
+      "path-conditioned multilayer partial OT",
+      "capacity multicommodity dynamic OT",
+      "WFR closure",
+      "Verlet/Lie group",
+      "port-Hamiltonian shell",
+      "hybrid diffusion-jump empirical action",
+      "MFG empirical-measure relative entropy",
+      "defensive multimodal bridge proposal with exact likelihood ratio",
+      "weak-solution mass and positivity validation",
+      "Graphon Markov-operator normalization validation",
+      "fixed-point residual contraction validation",
+      "WSL2 JAX Newton-Krylov and exact JVP backend",
+      "blocked conformal observation/parameter/structure DRO radius",
+      "risk-neutral martingale optimal transport with financial feedback",
+      "Tinbergen target-tool local reachability and identifiability gate",
+      "asymmetric convex real adjustment costs",
+      "low-dimensional polynomial barrier safety filter",
+      "cusp multistability and tropical min-plus/max-plus bottleneck controls with switch-surface hysteresis",
+      "time-expanded shared-capacity multicommodity operational graph",
+      "exact anonymous series-parallel max-flow/min-cut and Menger connectivity",
+      "fractional b-matching repair and partition-matroid protection",
+      "hypergraph complementarity and within-month cascade fixed point",
+      "existing robust facility coverage and multilayer Graphon dynamic community fields"
+    ],
+    "theory_only": [
+      "global high-dimensional SOS proof: excluded until a certified polynomial surrogate error bound is available",
+      "projective and derived algebraic geometry: no identified same-path consumer",
+      "large-scale exact interdiction MILP and Steiner design: excluded until identifiable public node-level data exist",
+      "standalone graph colouring: subsumed by the capacity-feasible matching schedule and has no additional identified consumer"
+    ],
+    "superseded": [
+      "structure-preserving ROM: no reduction benefit for the six-dimensional full-order symplectic core"
+    ]
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "model_version": "V7.6-SIGNED-POTENTIAL-SCF",
+  "classification": "STATIC_CODE_COUPLING_AUDIT",
+  "status": "PASS",
+  "checks": {
+    "sign_magnitude_separation": true,
+    "opposing_state_flip": true,
+    "potential_circulation_split": true,
+    "signed_laplacian": true,
+    "adaptive_scf_trust": true,
+    "multistart_branch_probe": true,
+    "dynamic_positive_negative_graphon": true,
+    "nonabsorbing_boundary_test": true,
+    "nonautonomous_spectrum": true,
+    "online_tda_feedback": true,
+    "tda_h0_persistence": true,
+    "tda_bipersistence_rank_slices": true,
+    "tda_mapper_nerve": true,
+    "tda_zigzag": true,
+    "tda_directed_flag": true,
+    "tda_relative_h0": true,
+    "runtime_replacement": true,
+    "runtime_validation": true,
+    "no_probability_patch": true
+  }
+}

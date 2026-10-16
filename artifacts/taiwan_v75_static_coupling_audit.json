@@ -1,0 +1,34 @@
+{
+  "model_version": "V7.5-HYPERGRAPH-MINSKY-FINANCE",
+  "status": "PASS",
+  "classification": "PRE_SIMULATION_INTEGRITY_GATE",
+  "diagnostic_status": "PASS",
+  "code_coupling_status": "PASS",
+  "inherited_v74_traceability": "PASS",
+  "coverage_percent": 100.0,
+  "blocking_gaps": [],
+  "simulation_authorized": true,
+  "simulation_executed": false,
+  "outcome_artifacts_created": false,
+  "selected_method_boundary": {
+    "active": [
+      "Minsky financing state flows",
+      "aggregate financial clearing and fire sale",
+      "JCIR-Hawkes-regime tail risk",
+      "term/FX/CVaR-DRO feedback",
+      "directed multilayer hypergraph GMFG"
+    ],
+    "retained": [
+      "all V7.4 modules",
+      "pairwise Graphon layers",
+      "specialized hard-capacity network flow",
+      "CGE, DSGE, HANK and continuous HJB-FP solvers"
+    ],
+    "excluded": [
+      "institution-level exposure claims",
+      "classified operational networks",
+      "post-hoc probability adjustment",
+      "outcome simulation in this task"
+    ]
+  }
+}

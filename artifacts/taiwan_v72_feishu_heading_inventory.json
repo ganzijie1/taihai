@@ -1,0 +1,43 @@
+{
+  "captured_at": "2026-10-14",
+  "method": "Feishu docx block pagination; block types heading1 through heading7",
+  "documents": {
+    "UEnMdV2AGoaAuKxAsSwcg563nSb": 350,
+    "E3SDdy2reoTeVjxiiZhcszw8nve": 87,
+    "QIQZd7QOCo7LQIxmJv0cHFb6nCg": 10,
+    "U0Zydx0uSoxaxZxutUKc6lbDnBe": 28,
+    "VqnJdDTrIoMrPyxOX7fcBvyande": 41,
+    "Uu2Mdtxw7oPqbLx9oumcHHdWn02": 53,
+    "AOM5dDZ2gooFEQxOiHacyTh5nke": 56,
+    "ZkYhdRSmYoLe06xyJ9Xc0cJnnEG": 31,
+    "HwsBdgnDnopW2fxAMW4cCYavn9f": 68,
+    "BZqxdzIzrolfo4x5Svsc1zHanLc": 48,
+    "DkMsdAwMCoECTgxykCSc7D3Qneg": 39,
+    "E6mrdVdn7oyWZ8xogIqcRGLKn2d": 44,
+    "M6t9dmRhkoMhPrxJnV3ciYJXn2c": 57,
+    "Ou3NdGj7CoGUqwxfht5clSdqnxd": 45,
+    "UzrzdYIE7o43byxTBgbc4wRbnZf": 48,
+    "IPmBdZpRVoQPv0xpoqucDan2nTb": 52,
+    "U87BdiGmNo73F1xu9EvcZHg2nV7": 14,
+    "Ac8Jd2DEgolpupxB855cq3e7nec": 44,
+    "UkOJdPutqoPGYPxcnZPcFQx4nrb": 19,
+    "UQ5Cd1DwkoEpklx79eec8acwnEf": 75,
+    "Ob5WdBtBeoPftJxtHsCc6gzWn0e": 63,
+    "UsuFdiXrJomjGDxioUpcNFcMnzb": 52,
+    "TzW4dwMsdo14CIxUaW7c1Cb1nDg": 20,
+    "G9KGdlUYko10qexv2k5cLL9inAd": 27,
+    "V9f9dUVgroX9Zuxq3XxccH0tnlh": 46,
+    "R7qkdxtxCoIgqQxs0lgcrSofnVM": 35,
+    "SsfPdBT62o3abXxDAfSc37YMnfg": 48,
+    "VqRNdUgRXob6ntxHBjscg4bPndf": 33
+  },
+  "actual_heading_count": 1533,
+  "legacy_v71_recorded_heading_count": 892,
+  "unreconciled_difference": 0,
+  "classification_counts": {
+    "active": 1308,
+    "explanatory": 110,
+    "superseded": 63,
+    "theory_only": 52
+  }
+}

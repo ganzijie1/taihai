@@ -4,5 +4,13 @@ scipy==1.13.1
 pyamg==5.3.0
 ml-dtypes==0.4.1
 jax[cuda12]==0.4.30
+nvidia-cuda-nvcc-cu12==12.4.131
 --extra-index-url https://download.pytorch.org/whl/cu124
 torch==2.6.0+cu124
+openpyxl==3.1.5
+matplotlib==3.8.4
+contourpy==1.2.1
+torchdiffeq==0.2.5
+geomloss==0.3.1
+POT==0.9.7.post1
+requests==2.32.5

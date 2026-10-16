@@ -1,0 +1,23 @@
+{
+  "scope": "DIAGNOSTIC_ONLY; no probabilities or scenario results",
+  "status": "PASS",
+  "report": {
+    "weak_mass_residual": 3e-16,
+    "minimum_density": 1e-08,
+    "graphon_row_residual": 2e-16,
+    "graphon_markov_spectral_radius": 1.0,
+    "mfg_fixed_point_residual": 0.00015,
+    "mfg_empirical_residual_contraction": 0.3333333333333333,
+    "macro_outer_residual": 0.0025,
+    "macro_cge_residual": 0.0019,
+    "macro_dsge_residual": 0.00075,
+    "rare_event_likelihood_residual": 2e-16,
+    "rare_event_empirical_mass_residual": 0.0,
+    "all_values_finite": true,
+    "passed": true,
+    "scope": "read_only_validation",
+    "probability_adjustment": false,
+    "semigroup_note": "The contraction quotient is an empirical fixed-point residual ratio, not a claimed generator spectral bound.",
+    "graphon_note": "The radius equals one only for the implemented nonnegative row-stochastic Markov kernel; the row residual is audited."
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "model_version": "V7.6-SIGNED-POTENTIAL-SCF",
+  "status": "PASS",
+  "classification": "PRE_SIMULATION_INTEGRITY_GATE",
+  "diagnostic_status": "PASS",
+  "code_coupling_status": "PASS",
+  "coverage_percent": 100.0,
+  "blocking_gaps": [],
+  "simulation_authorized": true,
+  "simulation_executed": false,
+  "outcome_artifacts_created": false,
+  "method_boundary": {
+    "active": [
+      "signed Graphon opposing fields",
+      "time-dependent positive/negative relation memory",
+      "potential/circulation decomposition",
+      "adaptive SCF trust region",
+      "reduced multistart branch diagnostic",
+      "online H0/Mapper/bipersistence/zigzag/directed-flag TDA"
+    ],
+    "retained": [
+      "all 151 V7.5 active modules",
+      "V7.5 hypergraph and quantitative finance",
+      "hard-capacity network solvers"
+    ],
+    "excluded": [
+      "unbounded repelling dynamics",
+      "claim that the complete directed GMFG has a global free energy",
+      "post-hoc probability adjustment"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "model_version": "V7.3-CONTINUOUS-GRAPH",
+  "status": "FROZEN",
+  "reason": "continuous-graph diagnostics, stress, traceability and single-owner accounting passed",
+  "hashes": {
+    "work\\continuous_graph_network_v73.py": "CAFFD1669741D5106424474B8658DD825F5416D2831B515DE8012B47680390EB",
+    "work\\diagnostic_taiwan_v73.py": "B4D06B44FE8CCAB218A3950AC933EEBF25542E098E8E724DFB886FC7F56B507E",
+    "work\\stress_taiwan_v73.py": "803EEA0D1871C4892FF9E71DE56FD1D2062530C47191237FAA61FA7994AE2446",
+    "work\\simulate_taiwan_fully_closed_v73.py": "46C99D5AB287790B61E0DDF67D87650DD6A7A8F8F9A0B226171BD0AF96C22CB8",
+    "work\\simulate_taiwan_v73_checkpointed.py": "1625EAFE277AA1035BC1C8081B2FA9B64B0CE125E1EAC71DD4CDAB30DA56959D",
+    "work\\run_v73_checkpoint_shard.py": "A7C8919C068F6488754792080E220FDD12D7B4C6DAE532390B975331F0EB5C2A",
+    "work\\audit_taiwan_v73.py": "88681688B70784855894124E5F956907FC1AF30DA12386DE47D8EB3724B9CF8C",
+    "work\\prepare_taiwan_v73.py": "DDFF4792F944CCAE103F2B1EB8122985F5FB2DE9511675BBB794E37BA435FAC4"
+  },
+  "diagnostic_hashes": {
+    "outputs\\taiwan_v73_continuous_graph_diagnostic.json": "B2A6634BC03302E58B9A5E6A0B482E0C9EA391D6F4AD519F7C80B6C8DE82F959",
+    "outputs\\taiwan_v73_continuous_graph_stress.json": "C6D0B2370BD3D9EF270E61E1CD2AF90902FA641543E239E8966B88459478763E",
+    "outputs\\taiwan_v73_feishu_heading_details.json": "A12878EEE300AFD745F4C38F8A4787624A1E32ABDFBE69EFBDB45D989574C076",
+    "outputs\\taiwan_v73_heading_module_map.json": "F48428C0E029A0A5EB3BA9355FF153F7A7D34325E867828524943B1D2F42DC61",
+    "outputs\\taiwan_v73_feishu_heading_inventory.json": "6E2A504E8473AAA3F13021D31E611938A88938729B67C655F638ADE9B1196677"
+  },
+  "posthoc_probability_adjustment": false
+}

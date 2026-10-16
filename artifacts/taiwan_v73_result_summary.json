@@ -1,0 +1,275 @@
+{
+  "model_version": "V7.3-CONTINUOUS-GRAPH",
+  "interpretation": "registered trade scenarios are equally weighted sensitivity cases, not empirically estimated scenario probabilities",
+  "case_horizon_conditional_broad_control": [
+    {
+      "case": "timely_full",
+      "horizon_years": 5,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "timely_full",
+      "horizon_years": 10,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "timely_full",
+      "horizon_years": 15,
+      "equal_weight_trade_scenario_mean": 0.00037187162991335386,
+      "minimum": 0.0,
+      "maximum": 0.002231229779480123
+    },
+    {
+      "case": "timely_full",
+      "horizon_years": 20,
+      "equal_weight_trade_scenario_mean": 0.0017603080551590125,
+      "minimum": 0.0,
+      "maximum": 0.006442113013068286
+    },
+    {
+      "case": "timely_full",
+      "horizon_years": 30,
+      "equal_weight_trade_scenario_mean": 0.0024765819111632684,
+      "minimum": 0.0,
+      "maximum": 0.006442113013068286
+    },
+    {
+      "case": "limited",
+      "horizon_years": 5,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "limited",
+      "horizon_years": 10,
+      "equal_weight_trade_scenario_mean": 0.0004294742008712192,
+      "minimum": 0.0,
+      "maximum": 0.002576845205227315
+    },
+    {
+      "case": "limited",
+      "horizon_years": 15,
+      "equal_weight_trade_scenario_mean": 0.0019736651508482127,
+      "minimum": 0.0,
+      "maximum": 0.004462459558960246
+    },
+    {
+      "case": "limited",
+      "horizon_years": 20,
+      "equal_weight_trade_scenario_mean": 0.012030934520055577,
+      "minimum": 0.0,
+      "maximum": 0.03593778759433094
+    },
+    {
+      "case": "limited",
+      "horizon_years": 30,
+      "equal_weight_trade_scenario_mean": 0.02581125853165971,
+      "minimum": 0.004418561600393302,
+      "maximum": 0.039480949751518495
+    },
+    {
+      "case": "delayed",
+      "horizon_years": 5,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "delayed",
+      "horizon_years": 10,
+      "equal_weight_trade_scenario_mean": 0.0004294742008712192,
+      "minimum": 0.0,
+      "maximum": 0.002576845205227315
+    },
+    {
+      "case": "delayed",
+      "horizon_years": 15,
+      "equal_weight_trade_scenario_mean": 0.0008013458307845729,
+      "minimum": 0.0,
+      "maximum": 0.002576845205227315
+    },
+    {
+      "case": "delayed",
+      "horizon_years": 20,
+      "equal_weight_trade_scenario_mean": 0.002245517810206201,
+      "minimum": 0.0,
+      "maximum": 0.009018958218295601
+    },
+    {
+      "case": "delayed",
+      "horizon_years": 30,
+      "equal_weight_trade_scenario_mean": 0.015174510073248245,
+      "minimum": 0.002209280800196651,
+      "maximum": 0.023985720129411324
+    },
+    {
+      "case": "japan_only",
+      "horizon_years": 5,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "japan_only",
+      "horizon_years": 10,
+      "equal_weight_trade_scenario_mean": 0.0009067094592600232,
+      "minimum": 0.0,
+      "maximum": 0.002863411550332825
+    },
+    {
+      "case": "japan_only",
+      "horizon_years": 15,
+      "equal_weight_trade_scenario_mean": 0.006063143562361927,
+      "minimum": 0.0,
+      "maximum": 0.02426686425945452
+    },
+    {
+      "case": "japan_only",
+      "horizon_years": 20,
+      "equal_weight_trade_scenario_mean": 0.021652853489171967,
+      "minimum": 0.0,
+      "maximum": 0.05101598791644103
+    },
+    {
+      "case": "japan_only",
+      "horizon_years": 30,
+      "equal_weight_trade_scenario_mean": 0.047597501771513645,
+      "minimum": 0.0067856481720325705,
+      "maximum": 0.08787939240217728
+    },
+    {
+      "case": "taiwan_alone",
+      "horizon_years": 5,
+      "equal_weight_trade_scenario_mean": 0.0,
+      "minimum": 0.0,
+      "maximum": 0.0
+    },
+    {
+      "case": "taiwan_alone",
+      "horizon_years": 10,
+      "equal_weight_trade_scenario_mean": 0.0009067094592600232,
+      "minimum": 0.0,
+      "maximum": 0.002863411550332825
+    },
+    {
+      "case": "taiwan_alone",
+      "horizon_years": 15,
+      "equal_weight_trade_scenario_mean": 0.006962511386493893,
+      "minimum": 0.0,
+      "maximum": 0.026489783122916003
+    },
+    {
+      "case": "taiwan_alone",
+      "horizon_years": 20,
+      "equal_weight_trade_scenario_mean": 0.02461471231426919,
+      "minimum": 0.0025966951153077902,
+      "maximum": 0.05323890677990251
+    },
+    {
+      "case": "taiwan_alone",
+      "horizon_years": 30,
+      "equal_weight_trade_scenario_mean": 0.12328832526460827,
+      "minimum": 0.07433317814495415,
+      "maximum": 0.17552634187090285
+    }
+  ],
+  "intervention_probability_means": {
+    "timely_full": 0.40563807791602435,
+    "limited": 0.06728390282391758,
+    "delayed": 0.2631216510315888,
+    "japan_only": 0.14500033838058504,
+    "taiwan_alone": 0.11895602984788398
+  },
+  "intervention_weighted_conditional_broad_control": [
+    {
+      "horizon_years": 5,
+      "intervention_weighted_equal_trade_scenario_mean": 0.0
+    },
+    {
+      "horizon_years": 10,
+      "intervention_weighted_equal_trade_scenario_mean": 0.0003812323971101809
+    },
+    {
+      "horizon_years": 15,
+      "intervention_weighted_equal_trade_scenario_mean": 0.0022018832059500374
+    },
+    {
+      "horizon_years": 20,
+      "intervention_weighted_equal_trade_scenario_mean": 0.008182120094393876
+    },
+    {
+      "horizon_years": 30,
+      "intervention_weighted_equal_trade_scenario_mean": 0.028301563844133966
+    }
+  ],
+  "long_term_competing_risk_checkpoints": [
+    {
+      "year": 2030,
+      "force": 0.018611111111111113,
+      "peace": 0.00387319972241919,
+      "separation": 0.00627020269318323,
+      "status_quo": 0.9712454864732865
+    },
+    {
+      "year": 2035,
+      "force": 0.03836441194355085,
+      "peace": 0.007930714089789745,
+      "separation": 0.013102242397099846,
+      "status_quo": 0.9406026315695595
+    },
+    {
+      "year": 2050,
+      "force": 0.08882071295998392,
+      "peace": 0.02163783137471291,
+      "separation": 0.03481453719783542,
+      "status_quo": 0.8547269184674677
+    },
+    {
+      "year": 2075,
+      "force": 0.16421793370774296,
+      "peace": 0.04469446579466968,
+      "separation": 0.07035128664141056,
+      "status_quo": 0.7207363138561769
+    },
+    {
+      "year": 2100,
+      "force": 0.23554102473316732,
+      "peace": 0.06546223425083622,
+      "separation": 0.10771602587346787,
+      "status_quo": 0.5912807151425286
+    }
+  ],
+  "continuous_graph_runtime_envelope": {
+    "maximum_mass_balance_residual": 2.6645352591003757e-15,
+    "maximum_cfl": 0.3848316276656151,
+    "maximum_finite_graphon_rollback_error": 0.008711325503011569,
+    "minimum_capacity_gate": 0.3117270829644459,
+    "minimum_enterprise_gate": 0.6035053072581181
+  },
+  "matched_v72_v73_ablation": {
+    "scope_warning": "V7.2 has only a partial 12-cell checkpoint set; this is a matched diagnostic subset, not a full-version estimate",
+    "matched_cells": [
+      "00_00",
+      "00_01",
+      "00_02",
+      "00_03",
+      "01_02",
+      "01_03",
+      "02_00",
+      "02_01",
+      "02_02",
+      "04_00",
+      "04_01",
+      "04_02"
+    ],
+    "matched_row_count": 60,
+    "mean_change_v73_minus_v72": -0.005213918085401545,
+    "minimum_change": -0.06303224127031345,
+    "maximum_change": 0.0022312297794801223
+  }
+}

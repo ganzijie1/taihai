@@ -1,0 +1,62 @@
+{
+  "model_version": "V6.9-OT-SYM-ACTIVE",
+  "status": "FROZEN",
+  "formal_design": {
+    "paths": 128,
+    "months": 360,
+    "cells": 30
+  },
+  "runtime_environment": {
+    "distribution": "Ubuntu-24.04 WSL2",
+    "python": "3.12",
+    "jax": "0.4.30 CUDA12",
+    "torch": "2.6.0+cu124",
+    "gpu": "NVIDIA GeForce RTX 3060 12GB",
+    "wsl_memory_limit_gb": 10
+  },
+  "solver_selection": {
+    "cge": "JAX matrix-free Newton-Krylov",
+    "dsge": "JAX exact-JVP Newton-Krylov",
+    "mfg_hjb": "Numba batched policy iteration",
+    "mfg_fp": "PyTorch CUDA conservative finite volume",
+    "elliptic_diagnostic": "geometric multigrid"
+  },
+  "gate": {
+    "coverage_percent": 100.0,
+    "diagnostics": "PASS",
+    "manifest_audit": "PASS",
+    "static_coupling_audit": "PASS",
+    "same_path_bidirectional_feedback": true,
+    "posthoc_probability_adjustment": false
+  },
+  "validation_plan": {
+    "runtime": [
+      "all inherited V6.8 gates",
+      "discounted martingale residual",
+      "probability simplex and nonnegativity",
+      "conformal radius activity",
+      "same-path financial feedback"
+    ],
+    "ablations": [
+      "martingale OT off",
+      "conformal decomposition off"
+    ],
+    "common_random_numbers": true,
+    "v67_outcome_equivalence_required": false
+  },
+  "hashes": {
+    "work\\requirements-wsl-jax-cuda.txt": "D77635C675F750720F4FBC17E9F9FAE65327D6BAFDE06C87A3ACEAC4A942B2A4",
+    "work\\simulate_taiwan_multidomain_v42.py": "908373F5EA368E2EE917EF9D93238986D2146A7CAA4BB859E1F5CDAA8CF716EB",
+    "work\\optimal_transport_geometry_v62.py": "D9B17AFE2176F3853BF7777E27262C1F3317E657DD9ED2BFA6C14CCBB51538A9",
+    "work\\deep_optimal_transport_v66.py": "E90E35AE6067B943191178401706DB43D852F4F68856C3222436FC2206A096A6",
+    "work\\transport_symplectic_v66.py": "EF5C4598EA7D713B6DBD6C73616A5C03F0D628751772F1C1AE96561F00F56FDA",
+    "work\\martingale_ot_finance_v69.py": "CCA61C6257E66F91D7D89E8970C16387F5F7D269907697EA846825956571AA85",
+    "work\\simulate_taiwan_fully_closed_v69.py": "731711C4BABDD3037D513ED796C2E3B6D8BA8F4ADD50077F64964D90357165D2",
+    "work\\simulate_taiwan_v69_checkpointed.py": "4F4BE9F07EE7D218B4D1C165A9E9D497A11DBA66AC8A8174A075AE0CA6454F36",
+    "work\\diagnostic_taiwan_v69.py": "05D3448A6D192F260B5DEA5A147042EBAFB7311B9617EF369CEB3B715C236021"
+  },
+  "diagnostic_hashes": {
+    "outputs/taiwan_v69_ot_symplectic_active_diagnostic.json": "92C704E6137AC85BBB1BDFEF0CFBBE9DA454838D05B2E0270A98A24093D64D13"
+  },
+  "auditor_sha256": "F89059534923D452C0017841AA6172AED469FF3D7824767F27EF3C7758FBC234"
+}

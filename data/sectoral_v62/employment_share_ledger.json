@@ -1,0 +1,38 @@
+{
+  "schema": "taiwan-v6.2-employment-share-ledger",
+  "unit": "percent of total employment",
+  "actor_order": ["china", "taiwan", "united_states", "japan"],
+  "sector_order": ["agriculture", "industry", "services"],
+  "observations": {
+    "china": {
+      "year": 2025,
+      "values": [21.6768623336956, 31.7923235092111, 46.5308142926728],
+      "publisher": "World Bank, modeled ILO estimate",
+      "files": ["wb_employment_agriculture.json", "wb_employment_industry.json", "wb_employment_services.json"]
+    },
+    "taiwan": {
+      "year": 2025,
+      "values": [4.18, 34.81, 61.02],
+      "publisher": "Directorate-General of Budget, Accounting and Statistics, Executive Yuan",
+      "source": "https://service.moea.gov.tw/EE521/common/Common.aspx?code=I&no=1",
+      "note": "Official annual average; displayed components sum to 100.01 because of source rounding. The solver renormalizes them."
+    },
+    "united_states": {
+      "year": 2025,
+      "values": [1.52494439217106, 18.9122762686396, 79.5627787515985],
+      "publisher": "World Bank, modeled ILO estimate",
+      "files": ["wb_employment_agriculture.json", "wb_employment_industry.json", "wb_employment_services.json"]
+    },
+    "japan": {
+      "year": 2025,
+      "values": [2.81371149789044, 23.2286936582183, 73.9575933652489],
+      "publisher": "World Bank, modeled ILO estimate",
+      "files": ["wb_employment_agriculture.json", "wb_employment_industry.json", "wb_employment_services.json"]
+    }
+  },
+  "use": "Initial labor shares only. Value-added shares remain owned by the observed IO/SAM calibration.",
+  "limitations": [
+    "Taiwan is an official survey estimate while the other three series are modeled ILO estimates.",
+    "The model treats the cross-source discrepancy as a calibration limitation and never as a causal effect."
+  ]
+}

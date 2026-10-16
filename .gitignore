@@ -8,6 +8,7 @@ venv/
 outputs/*.csv
 outputs/*simulation*.json
 outputs/*results*.json
+outputs/
 *.xlsx
 *.xls
 *.parquet
@@ -15,4 +16,3 @@ outputs/*results*.json
 *.pickle
 .env
 .env.*
-

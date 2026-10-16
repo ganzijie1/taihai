@@ -1,0 +1,24 @@
+{
+  "model_version": "V7.5-HYPERGRAPH-MINSKY-FINANCE",
+  "status": "FROZEN",
+  "reason": "source, deterministic fixture and active-chain audits passed; no outcome run performed",
+  "hashes": {
+    "work\\quantitative_financial_instability_v75.py": "29247091E7242F501D4E42F8357C869638A4056CFB29273E72389876FB6D0AE9",
+    "work\\hypergraph_mfg_v75.py": "BBA1019C8C321C6690CA02FC179173837DC79D33D48A039243CBFDB400ED5518",
+    "work\\simulate_taiwan_fully_closed_v75.py": "0F0771A55D8185EDF722F9F6F976D1D81167849AAD887D9DFCBD86CE7EE9880F",
+    "work\\diagnostic_taiwan_v75.py": "01B9EB92C36640436CD6C6EF1C7C69C7535929794497727329D96055F45ADBA9",
+    "work\\audit_taiwan_v75.py": "A319DF77D8B8018FD0D242C41F79DDE621B472604E47636DB2A3274E0885B0B3",
+    "work\\simulate_taiwan_v75_checkpointed.py": "BDE49CE1B45EEB4D3A14ECF3BE3AF644B42F60D14528C7DCFF72AE7E7A57EDE7",
+    "work\\run_v75_checkpoint_shard.py": "B2B5239AAB918620F2B55CDD94A08F56D3840E22FECF7E50FEB8E0C6A69C2D39",
+    "work\\audit_taiwan_v75_results.py": "EFAD7F9BC09472A25629DE157A3C77A4B7E30ADADAE263C51BE635D54367DE96",
+    "work\\prepare_taiwan_v75.py": "1B4A86130D42E4C5A64F15CA9B842CBA9DE92C3DA3509AF82CF92E2CB833D716"
+  },
+  "diagnostic_hashes": {
+    "outputs\\taiwan_v75_diagnostic_only.json": "4F171D972786875826E7FB7549069821F586239049089B17DEBFED3928B5E17B",
+    "outputs\\taiwan_v75_code_coupling_audit.json": "9EF183ECBD5817BC46D0B8C8EADA234DD9BA6233630EB1E2BCC45AE0C45B102D",
+    "outputs\\taiwan_v75_traceability.json": "36B71346E0521693499D68A27A0D6E60B99686525828A9DB4EFCF12AECDC1431",
+    "outputs\\taiwan_v75_static_coupling_audit.json": "8958F71EEF4DEA28BBD1E45E995ED4F57BD52C069F20EA4D3674205730BA5802"
+  },
+  "simulation_executed": false,
+  "posthoc_probability_adjustment": false
+}

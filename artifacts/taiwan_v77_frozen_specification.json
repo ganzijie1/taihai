@@ -1,0 +1,41 @@
+{
+  "model_version": "V7.7-COMPLETE-THEORY-CLOSURE",
+  "status": "FROZEN",
+  "reason": "all useful theory-only mechanisms resolved into active implementations or existing active owners; evidence-based exclusions retained",
+  "hashes": {
+    "work\\information_geometry_v58.py": "DFD6D192E992FF37AE0DFA1817CFCCAE1CB2F015E594A43E16977BE382207464",
+    "work\\dynamic_macro_equilibrium_v47.py": "303F14FDF86EB230A55A700EB4B9250E04B744815AE5AD52C42D40A78CF7B198",
+    "work\\complete_information_geometry_v77.py": "1881B0FC5E4AB4C985FED5CC128769C5CEE15EA4810247E7C04B50D1734414E0",
+    "work\\complete_network_geometry_v77.py": "BDACF4ADD42FD2177E9D146871F1693BABDBBC12BB629F2F05FF9E62D0E51DD6",
+    "work\\complete_online_tda_v77.py": "85B0CF1D1DB67CC92B35E00828FC77D40D75133A7437250DD591E9B07A52ECC9",
+    "work\\coupled_oscillator_v77.py": "478B4465D2408ADD2C61FF41E4633532E91E8772D70D4C3D582C0115EA39469C",
+    "work\\nested_ces_cge_v77.py": "7F6617268B6EC5C3584CC027FB11BF8A65C8FBA276CD6908FFD082CF6908620E",
+    "work\\complete_theory_mfg_v77.py": "2C0F74E7A20B327BC2FADFF16AF5D3581D979BB6D76BB7FBBDF37BCC539A3F3B",
+    "work\\simulate_taiwan_fully_closed_v77.py": "FA1A0232FB51084FB2BDE783A61B7DEF4D5FC9639762333CDE40B2B4B8588CDE",
+    "work\\diagnostic_taiwan_v77.py": "5F5FFE1D9331478924CE2957052CCB5CD6D28A598DCDCC2175103D86C2A4B862",
+    "work\\audit_taiwan_v77.py": "9FAB27FD09EBD3275EAB38D0DDEE1E01942DFA203B692D8B4D9068B10533723B",
+    "work\\theory_resolution_v77.py": "309C4C5898BB5FD7A8DADED82BEE2944362C3CA2714C15D09FE987F86857962E",
+    "work\\prepare_taiwan_v77.py": "781CD6A267535899DF248792BEDC0644EEC9B7E702D6CCBFB2608027D6BAE2A9",
+    "work\\simulate_taiwan_v77_checkpointed.py": "AC276E2297CE7868B1725F0F4BBB934FD030848902867F49C8E69E6649D23E3A",
+    "work\\run_v77_checkpoint_shard.py": "3A343CEE9DF354E275F95F70BE4E0FBE75F115718BF06E3EE04C09446B335EC7",
+    "work\\audit_taiwan_v77_results.py": "8838E045C3FE8CCBFDD2C0394BBF02E34C0BBF32BC5604C1E84F4BBB57219A21"
+  },
+  "solver_dependencies": {
+    "numpy": "1.26.4",
+    "numba": "0.60.0",
+    "pot": "0.9.7.post1",
+    "geomloss": "0.3.1",
+    "torch": "2.6.0+cu124",
+    "cuda_runtime": "12.4",
+    "cuda_available": true
+  },
+  "diagnostic_hashes": {
+    "outputs\\taiwan_v77_diagnostic_only.json": "9B543BB730F49C524E40ABFFBC781E203B6E4B2863FE88CDC2D9829232CC5941",
+    "outputs\\taiwan_v77_code_coupling_audit.json": "414BFE73D4EAD508B998AD8B12DCDF0F00129E03FB3BEEB45C6B676089EEEF6A",
+    "outputs\\taiwan_v77_theory_only_resolution.json": "F0EE62B2CE0F2FDDE7A55A192A0103BAEF8158A41627D9543FA862426328572E",
+    "outputs\\taiwan_v77_traceability.json": "48C2D8FA6039A55187A90FF6D43E558C6896176869427492C586413B8B9A2B0F",
+    "outputs\\taiwan_v77_static_coupling_audit.json": "4E18DCBA6014B27CB3D91213A0BBB69788DF55885FBCD78A6DD283740289E2BF"
+  },
+  "simulation_executed": false,
+  "posthoc_probability_adjustment": false
+}

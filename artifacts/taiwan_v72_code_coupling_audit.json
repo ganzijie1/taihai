@@ -1,0 +1,19 @@
+{
+  "model_version": "V7.2-ALGEBRAIC-DISCRETE-GRAPH",
+  "classification": "STATIC_COUPLING_AUDIT; no outcome probabilities",
+  "status": "PASS",
+  "checks": {
+    "all_solver_methods_present": true,
+    "active_wrapper_swap": true,
+    "wrapper_restores_class": true,
+    "runtime_gate_called": true,
+    "complete_model_gate_enforced": true,
+    "diagnostic_passed": true,
+    "long_horizon_operational_stress_passed": true,
+    "all_v72_modules_traced": true,
+    "heading_level_bidirectional_traceability_passed": true,
+    "complete_manifest_gate_passed": true,
+    "no_probability_postprocessing": true
+  },
+  "blocking_gaps": []
+}

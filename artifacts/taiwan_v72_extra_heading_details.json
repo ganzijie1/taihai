@@ -1,0 +1,604 @@
+{
+  "captured_at": "2026-10-14",
+  "total_headings": 116,
+  "documents": [
+    {
+      "document_id": "R7qkdxtxCoIgqQxs0lgcrSofnVM",
+      "heading_count": 35,
+      "headings": [
+        {
+          "block_id": "doxcnDQWYhnCdgUrcMkXe29zlwc",
+          "level": 1,
+          "text": "台海演化模型中的机制设计：从预测规则到激励相容的制度优化"
+        },
+        {
+          "block_id": "doxcnE0hCY0UOvdAOUf7X04XcQm",
+          "level": 2,
+          "text": "摘要"
+        },
+        {
+          "block_id": "doxcnafESBQl0CzTpBf4Pswsjdg",
+          "level": 2,
+          "text": "1. 为什么现有模型仍需要机制设计"
+        },
+        {
+          "block_id": "doxcnCbbeh8yjxebCFGShcCcRfb",
+          "level": 2,
+          "text": "2. 设计者、参与者、类型和结果"
+        },
+        {
+          "block_id": "doxcnWI9iO0dT9UeaCVmGhsn7eh",
+          "level": 2,
+          "text": "3. 总目标：不是最大化战争胜率"
+        },
+        {
+          "block_id": "doxcnLLwl9KuD1iv4SlXCqEHESe",
+          "level": 2,
+          "text": "4. 可实施性的六组硬约束"
+        },
+        {
+          "block_id": "doxcnLYXtwPNjGaJyK5psUGqq6d",
+          "level": 3,
+          "text": "4.1 贝叶斯激励相容"
+        },
+        {
+          "block_id": "doxcnzbVJh51bMb0J3QcrgmlTBm",
+          "level": 3,
+          "text": "4.2 参与约束"
+        },
+        {
+          "block_id": "doxcnYcPU5jrBuKoB9CXknej75f",
+          "level": 3,
+          "text": "4.3 预算平衡"
+        },
+        {
+          "block_id": "doxcnJD7Hkoti3AD843nXQEWBAg",
+          "level": 3,
+          "text": "4.4 资源与网络可行性"
+        },
+        {
+          "block_id": "doxcnvGFQz0Agq5ND13zz4E7tTm",
+          "level": 3,
+          "text": "4.5 有限责任和政治可接受性"
+        },
+        {
+          "block_id": "doxcntkDHvVXICtugQtqU8BGYfh",
+          "level": 3,
+          "text": "4.6 动态承诺和重新谈判"
+        },
+        {
+          "block_id": "doxcnkyFeudUOl8uPa6NXmsRR4b",
+          "level": 2,
+          "text": "5. 模块一：联盟负担分配机制"
+        },
+        {
+          "block_id": "doxcnaKyNQ6BOdw8uRZpYYJatgf",
+          "level": 3,
+          "text": "5.1 现有问题"
+        },
+        {
+          "block_id": "doxcnmqwZfmEbMuWKddGJK1FTjh",
+          "level": 3,
+          "text": "5.2 动态边际贡献机制"
+        },
+        {
+          "block_id": "doxcnnZT8UZBG2D8ta0atZXBeFd",
+          "level": 3,
+          "text": "5.3 接入现有模型"
+        },
+        {
+          "block_id": "doxcnpI2ejpi62ES7yztUuIzz4b",
+          "level": 2,
+          "text": "6. 模块二：援助拨付与道德风险合同"
+        },
+        {
+          "block_id": "doxcnD7rmrrrsl6btpsQBqUMPnf",
+          "level": 2,
+          "text": "7. 模块三：采购、军售与交付机制"
+        },
+        {
+          "block_id": "doxcnx5ELjYuXbmnhDE9wQCvbHg",
+          "level": 2,
+          "text": "8. 模块四：危机信息设计"
+        },
+        {
+          "block_id": "doxcnShmzpmIKr7UOm8A6AG9Kch",
+          "level": 2,
+          "text": "9. 模块五：停火、核查和状态依赖退出条款"
+        },
+        {
+          "block_id": "doxcnhuFTbllQCoKeNJnfC3svPm",
+          "level": 2,
+          "text": "10. 模块六：多层委托代理与地方治理"
+        },
+        {
+          "block_id": "doxcnl3Xz7VzUXHooDZJ9tdEjHd",
+          "level": 2,
+          "text": "11. 制裁解除、贸易恢复和保险机制"
+        },
+        {
+          "block_id": "doxcnwxGXrCa69lx91OqRVs8yte",
+          "level": 2,
+          "text": "12. 稳健机制设计"
+        },
+        {
+          "block_id": "doxcngsiH2wq43NpZ1fonRdaPsb",
+          "level": 2,
+          "text": "13. 与现有 V4.7 的同路径耦合位置"
+        },
+        {
+          "block_id": "doxcnOKALGgNh37EfuC1kb644Xg",
+          "level": 2,
+          "text": "14. 数值求解方案"
+        },
+        {
+          "block_id": "doxcnNb5DwRzKyEuJCeFz6a0wOc",
+          "level": 3,
+          "text": "14.1 静态和单参数类型"
+        },
+        {
+          "block_id": "doxcnCkHH2SMZshtSY0PqwuWKad",
+          "level": 3,
+          "text": "14.2 离散规则与组合采购"
+        },
+        {
+          "block_id": "doxcnqwH4QAfEV1EyUHA9Ub1vNd",
+          "level": 3,
+          "text": "14.3 动态私人类型"
+        },
+        {
+          "block_id": "doxcnSmKKWSWVeLGrvB4FAUpyUm",
+          "level": 3,
+          "text": "14.4 不完全承诺"
+        },
+        {
+          "block_id": "doxcnVR9LLpWJQYNcqfHAiYetAf",
+          "level": 2,
+          "text": "15. 评价指标与验证"
+        },
+        {
+          "block_id": "doxcngDiUOYyAwrV2rgBXmZE3uh",
+          "level": 2,
+          "text": "16. 推荐实施顺序"
+        },
+        {
+          "block_id": "doxcnbTnvS9sr4eN4IU7UIfQOic",
+          "level": 2,
+          "text": "17. 可实现的优化结论"
+        },
+        {
+          "block_id": "doxcnOtOYMnVdoqpLoz5w4wGwwc",
+          "level": 2,
+          "text": "18. 文献依据"
+        },
+        {
+          "block_id": "doxcnHtNjJNjYImAtt4Y4tvs3xc",
+          "level": 2,
+          "text": "19. 研究诚信声明"
+        },
+        {
+          "block_id": "doxcnR8cQmBkqgLsDAJuiSz10Ih",
+          "level": 2,
+          "text": "20. V4.8 以后实施状态与可追溯性修正（2026-10-14）"
+        }
+      ]
+    },
+    {
+      "document_id": "SsfPdBT62o3abXxDAfSc37YMnfg",
+      "heading_count": 48,
+      "headings": [
+        {
+          "block_id": "doxcnwU3Yv7WT5W7DJfdN99THim",
+          "level": 1,
+          "text": "扬·廷贝亨的最小化方法：从物理变分原理到计量经济政策"
+        },
+        {
+          "block_id": "doxcnefejxiCE9pyKphMKBvIG6m",
+          "level": 2,
+          "text": "文献与记号说明"
+        },
+        {
+          "block_id": "doxcn1LDc7nqTVk2bLYj2Ha6tkc",
+          "level": 1,
+          "text": "第一编　《物理学和经济学中的最小化问题》"
+        },
+        {
+          "block_id": "doxcnNAAjJq339sOZCkJWhEOXRb",
+          "level": 2,
+          "text": "1. 一般泛函与变分恒等式：原式（1）—（5）"
+        },
+        {
+          "block_id": "doxcn6kvNLFc6lopsgwKT9tsbAg",
+          "level": 3,
+          "text": "1.1 多重积分泛函"
+        },
+        {
+          "block_id": "doxcn6NScFCK5RPGJOkuLNEoWnm",
+          "level": 2,
+          "text": "2. Euler方程与边界条件：原式（6）、（15）—（18）"
+        },
+        {
+          "block_id": "doxcnKnnnUDxHEvSz1sv7yECLzh",
+          "level": 3,
+          "text": "2.1 自由边界的自然条件"
+        },
+        {
+          "block_id": "doxcnHk6dRJrAijVTTWNtIjvRab",
+          "level": 3,
+          "text": "2.2 单重积分"
+        },
+        {
+          "block_id": "doxcn7dqK9UTwhbl27nrdChleOf",
+          "level": 2,
+          "text": "3. 有限维极值与约束：原式（21）—（27）"
+        },
+        {
+          "block_id": "doxcnwlpI1vX03PEQd2vJUMu9rb",
+          "level": 3,
+          "text": "3.1 热力学相平衡"
+        },
+        {
+          "block_id": "doxcn91WZPxduOHLAlzwMpFD4sd",
+          "level": 3,
+          "text": "3.2 导电网络"
+        },
+        {
+          "block_id": "doxcngsIZfMgJHPg5e2wWZIIzbm",
+          "level": 2,
+          "text": "4. 高阶导数的Euler方程：原式（28）"
+        },
+        {
+          "block_id": "doxcnPiKciUYQVMEJh4LJ0eo0sg",
+          "level": 2,
+          "text": "5. 二次型：原式（29）"
+        },
+        {
+          "block_id": "doxcnt2TNXeoRrvSYG5Qwm71iRg",
+          "level": 1,
+          "text": "第二编　互易关系"
+        },
+        {
+          "block_id": "doxcny6aptliPVZRdh3SpAo5O2b",
+          "level": 2,
+          "text": "6. 有限维互易定理：原式（30）—（38）"
+        },
+        {
+          "block_id": "doxcn2KDFJkkXOCknfNCOVdkKsf",
+          "level": 3,
+          "text": "6.1 部分Legendre变换"
+        },
+        {
+          "block_id": "doxcnBjDBTZt3JgCmnFYQvZV1lb",
+          "level": 3,
+          "text": "6.2 热力学Maxwell关系"
+        },
+        {
+          "block_id": "doxcnGE9rOSxSzARYhxVhc3Wy7b",
+          "level": 2,
+          "text": "7. 泛函互易与Green函数：原式（42）—（49）"
+        },
+        {
+          "block_id": "doxcn2R4aKFxFNPuPWWlKohMVxh",
+          "level": 3,
+          "text": "7.1 二次型下的值互易"
+        },
+        {
+          "block_id": "doxcn8MgxqSC8VkZmZAr9Pw22zd",
+          "level": 1,
+          "text": "第三编　Routh、Hamilton与等价变分原理"
+        },
+        {
+          "block_id": "doxcnxtN6BhmqruYKqG1tAVKyGb",
+          "level": 2,
+          "text": "8. Legendre变换：原式（51）"
+        },
+        {
+          "block_id": "doxcnsbuP7ivva714IvSKFflWAh",
+          "level": 2,
+          "text": "9. Routh变换：原式（52）—（57）"
+        },
+        {
+          "block_id": "doxcn8bfrIqJqHBQoOdSpIHZlWh",
+          "level": 2,
+          "text": "10. Hamilton正则方程：原式（58）"
+        },
+        {
+          "block_id": "doxcnmWS7NHWba6FOfWJwqHpvAb",
+          "level": 2,
+          "text": "11. 直接产生正则方程的变分原理：原式（59）—（62）"
+        },
+        {
+          "block_id": "doxcnTPTKMzrOwF4jJ0ewAJd0Kf",
+          "level": 2,
+          "text": "12. Hilbert原理与最小作用原理：原式（63）—（69）"
+        },
+        {
+          "block_id": "doxcnhNu7iDIyqb4TDAZYeie9Bh",
+          "level": 2,
+          "text": "13. 高阶导数的正则化：原式（70）—（75）"
+        },
+        {
+          "block_id": "doxcnBPtYupeqTbGHgdFVmsTvAg",
+          "level": 2,
+          "text": "14. 多重积分的广义正则形式：原式（76）—（81）"
+        },
+        {
+          "block_id": "doxcn3aASxUKs8fsshDYB8lSQ4g",
+          "level": 2,
+          "text": "15. 守恒、均衡与散度定理：原式（89）—（99）"
+        },
+        {
+          "block_id": "doxcnFywTex4WzYO5OvQWMqakfc",
+          "level": 1,
+          "text": "第四编　论文中的经济学应用"
+        },
+        {
+          "block_id": "doxcn8kU4r66GX6oa1BHuikO8Vf",
+          "level": 2,
+          "text": "16. 企业形式共存：原式（100）—（102）"
+        },
+        {
+          "block_id": "doxcn6PqnbDZ04orSZvLZ2XOvGm",
+          "level": 2,
+          "text": "17. 边际量均等：原式（103）—（105）"
+        },
+        {
+          "block_id": "doxcnXAWeY8d2deieDkG5YFjZTe",
+          "level": 2,
+          "text": "18. 库存问题：原式（106）—（110）"
+        },
+        {
+          "block_id": "doxcnMfeTzNOuxywu0QYSLJNash",
+          "level": 3,
+          "text": "18.1 对库存路径求变分"
+        },
+        {
+          "block_id": "doxcnikzbt9xDQTd4Dso426UF9b",
+          "level": 3,
+          "text": "18.2 对销售量求极值"
+        },
+        {
+          "block_id": "doxcnwQMoMNiz3qGfy1dUNp60vg",
+          "level": 3,
+          "text": "18.3 消去边际生产成本"
+        },
+        {
+          "block_id": "doxcnXQa1HMeadrRaZbiOz082Qh",
+          "level": 3,
+          "text": "18.4 二次成本下的内生振荡"
+        },
+        {
+          "block_id": "doxcnx9YrfvpYQq9Mx6QX8CnGWh",
+          "level": 2,
+          "text": "19. 调整成本问题：原式（111）—（115）"
+        },
+        {
+          "block_id": "doxcnQK6OO1T6qdHnOxXdS1zQlf",
+          "level": 2,
+          "text": "20. 时滞问题"
+        },
+        {
+          "block_id": "doxcnrE49Ce8GUOzQ5Tbzwfbdab",
+          "level": 3,
+          "text": "20.1 一阶时滞近似"
+        },
+        {
+          "block_id": "doxcncbh7VxlPM5BX3lJV0DFIuf",
+          "level": 3,
+          "text": "20.2 工资、价格与就业"
+        },
+        {
+          "block_id": "doxcn92mPEHZ9sjJiSLO7gwNrjg",
+          "level": 3,
+          "text": "20.3 企业的最优价格路径"
+        },
+        {
+          "block_id": "doxcnmI9XaxL1f6uyy2uXH7BZAh",
+          "level": 1,
+          "text": "第五编　论文物理部分的统一理解"
+        },
+        {
+          "block_id": "doxcnFUXeecHlFnmSuZx1d8dTdm",
+          "level": 2,
+          "text": "21. 弹性、力学、电磁学的共同结构"
+        },
+        {
+          "block_id": "doxcngWBWbuVfylq5kgtxXEkqbh",
+          "level": 3,
+          "text": "21.1 弹性"
+        },
+        {
+          "block_id": "doxcn1eF66QGLGzrmSExOoarY8c",
+          "level": 3,
+          "text": "21.2 经典力学"
+        },
+        {
+          "block_id": "doxcnd9FghjUOxSasfvyky5nTih",
+          "level": 3,
+          "text": "21.3 电磁场"
+        },
+        {
+          "block_id": "doxcn6Lqo3aXTqCCkd9BYUPDZym",
+          "level": 1,
+          "text": "第六编　廷贝亨后续经济学的主要公式"
+        },
+        {
+          "block_id": "doxcn9J9auXTtFtWYw5f42M2MmU",
+          "level": 2,
+          "text": "22. 宏观计量模型"
+        }
+      ]
+    },
+    {
+      "document_id": "VqRNdUgRXob6ntxHBjscg4bPndf",
+      "heading_count": 33,
+      "headings": [
+        {
+          "block_id": "doxcnORkKXmBjcQRROAedt8NdSc",
+          "level": 1,
+          "text": "代数几何如何用于台海多系统模型"
+        },
+        {
+          "block_id": "doxcnja73kVlvdJWK7yrbIpT50b",
+          "level": 2,
+          "text": "摘要"
+        },
+        {
+          "block_id": "doxcnFOJJ6yOY5S5OjCi2y3WWue",
+          "level": 2,
+          "text": "1. 为什么不是把全模型代数化"
+        },
+        {
+          "block_id": "doxcnRSMIqZhP12HhJGVA0nacAd",
+          "level": 2,
+          "text": "2. 实代数几何：认证安全域与崩溃域"
+        },
+        {
+          "block_id": "doxcn0H3Qu8rBvhcE8gGzBrYWbd",
+          "level": 3,
+          "text": "2.1 半代数状态集"
+        },
+        {
+          "block_id": "doxcnMyNQbeH3uZGuavRS07KQLf",
+          "level": 3,
+          "text": "2.2 Lyapunov 与障碍证书"
+        },
+        {
+          "block_id": "doxcnBWOildI9nrQhILUh0sqZxe",
+          "level": 3,
+          "text": "2.3 平方和松弛"
+        },
+        {
+          "block_id": "doxcnRgp2CAqFqHG8xMcaRhPLge",
+          "level": 3,
+          "text": "2.4 在当前模型中的优先用途"
+        },
+        {
+          "block_id": "doxcnc9L60uoKwZcdTJqvQhTQld",
+          "level": 2,
+          "text": "3. 矩问题与概率界"
+        },
+        {
+          "block_id": "doxcnqPT76fzFzOUZyPdcZXjcJf",
+          "level": 2,
+          "text": "4. 代数统计：识别而不是增加参数"
+        },
+        {
+          "block_id": "doxcnx0DSPWL1a8lxnS3rLh6Aim",
+          "level": 3,
+          "text": "4.1 参数映射与 Jacobian 秩"
+        },
+        {
+          "block_id": "doxcn7FuKhE0oeKMPHhMMa3Tavm",
+          "level": 3,
+          "text": "4.2 消元理想"
+        },
+        {
+          "block_id": "doxcnSqfATHAyNKqMI6uvBiwElf",
+          "level": 3,
+          "text": "4.3 代数统计模型"
+        },
+        {
+          "block_id": "doxcnDxn4IapEUOHqjvKtEflm1e",
+          "level": 3,
+          "text": "4.4 与现有计量模块的关系"
+        },
+        {
+          "block_id": "doxcnFdjNahosQ8ZCu2f6rTVe4g",
+          "level": 2,
+          "text": "5. 数值代数几何：枚举多重均衡"
+        },
+        {
+          "block_id": "doxcnr5TpQF2LWbLE3vyf1mF8pb",
+          "level": 3,
+          "text": "5.1 多项式均衡系统"
+        },
+        {
+          "block_id": "doxcns0rv4QJBG8aCBmerFqZLRg",
+          "level": 3,
+          "text": "5.2 当前模型中的用途"
+        },
+        {
+          "block_id": "doxcneLKUkwfyIQ04vAtC55UL7m",
+          "level": 3,
+          "text": "5.3 稳定性筛选"
+        },
+        {
+          "block_id": "doxcnKeX2ncFZ1PeNleNjmpQcWc",
+          "level": 2,
+          "text": "6. 热带几何：极端瓶颈与主导尺度"
+        },
+        {
+          "block_id": "doxcn5lii2AHEAvNRxuctOMQWLc",
+          "level": 2,
+          "text": "7. 与现有模块的接入边界"
+        },
+        {
+          "block_id": "doxcnziqIsjAfVJqJQYBRTf6tbg",
+          "level": 2,
+          "text": "8. 数值实现路线"
+        },
+        {
+          "block_id": "doxcnFhVjlQJRR3mZVrmUwxcTue",
+          "level": 3,
+          "text": "第一阶段：只读识别审计"
+        },
+        {
+          "block_id": "doxcnoDUhfGpDXpCAF0Kh76glLe",
+          "level": 3,
+          "text": "第二阶段：局部 SOS 证书"
+        },
+        {
+          "block_id": "doxcnWauY9hqPkAVlQcqj7dWwfd",
+          "level": 3,
+          "text": "第三阶段：多均衡枚举"
+        },
+        {
+          "block_id": "doxcnIP8jlH8bEZSa8xkYtE8YTc",
+          "level": 3,
+          "text": "第四阶段：同路径反馈资格"
+        },
+        {
+          "block_id": "doxcneizOolxE1EshuZu0nnWItc",
+          "level": 2,
+          "text": "9. 计算代价与加速"
+        },
+        {
+          "block_id": "doxcnSWzOngyDi6ap8Q8Km8eLIe",
+          "level": 2,
+          "text": "10. 对当前模型的最终选型"
+        },
+        {
+          "block_id": "doxcnCPALZMksSLMFH2G5bsHWTd",
+          "level": 2,
+          "text": "参考方向"
+        },
+        {
+          "block_id": "doxcnQx10WspOB04gAhT06w5kUf",
+          "level": 2,
+          "text": "11. 热带几何的主动接入：V7.0 实现"
+        },
+        {
+          "block_id": "doxcnkEXK8d6s3kkLHy2BxCBJ9d",
+          "level": 3,
+          "text": "11.1 串联瓶颈与并联恢复"
+        },
+        {
+          "block_id": "doxcn9oXiLVy8EkYCK3MK7INb2d",
+          "level": 3,
+          "text": "11.2 热带超曲面、瓶颈切换与滞回"
+        },
+        {
+          "block_id": "doxcntv96RI2Wj0iflbZpHBVBxd",
+          "level": 3,
+          "text": "11.3 按瓶颈类型重分配控制"
+        },
+        {
+          "block_id": "doxcnsMqfryFoEDchLHzCXhzOZ8",
+          "level": 3,
+          "text": "11.4 验证、消融与适用边界"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "model_version": "V7.1-COMBINATORIAL-NETWORK",
+  "classification": "STATIC_COUPLING_AUDIT; no outcome probabilities",
+  "status": "PASS",
+  "checks": {
+    "inherits_unique_inventory_owner": true,
+    "all_solver_methods_present": true,
+    "active_wrapper_swap": true,
+    "wrapper_restores_class": true,
+    "runtime_gate_called": true,
+    "diagnostic_passed": true,
+    "trace_gate_passed": true,
+    "four_v71_modules_active": true,
+    "no_probability_postprocessing": true
+  },
+  "blocking_gaps": []
+}
