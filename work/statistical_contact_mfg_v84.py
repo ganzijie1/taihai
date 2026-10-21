@@ -12,7 +12,7 @@ class StatisticalContactMFGV84(ParticleValidatedMFGV83):
 
     def __init__(self, *args, **kwargs):
         enabled = {
-            name: bool(kwargs.pop(f"v84_{name}_enabled", True))
+            name: kwargs.pop(f"v84_{name}_enabled", True)
             for name in (
                 "nonparametric", "multivariate", "time_series", "wavelet", "contact",
                 "wavelet_temporal", "wavelet_coherence", "wavelet_graph", "wavelet_scattering",

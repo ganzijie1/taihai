@@ -1,0 +1,52 @@
+{
+  "model_version": "V8.5-FOUR-PARTY-PUBLIC-CHOICE",
+  "classification": "DATA_AND_ASSUMPTION_MANIFEST",
+  "state_owner": "FourPartyPublicChoiceSystemV85",
+  "scope": "Political feasibility and implementation frictions only; fiscal stocks, elections, collective action and terminal outcomes remain owned by their existing modules.",
+  "source_ledger": [
+    {
+      "family": "electoral competition and retrospective accountability",
+      "provenance": "public-choice literature",
+      "identification": "derived mechanism",
+      "use": "cycle proximity changes the weight of voter welfare in budget incentives"
+    },
+    {
+      "family": "selectorate and winning coalition",
+      "provenance": "comparative political economy literature",
+      "identification": "derived mechanism",
+      "use": "key-coalition support changes policy feasibility"
+    },
+    {
+      "family": "bureaucratic execution, rent seeking and veto players",
+      "provenance": "public economics and institutional economics literature",
+      "identification": "derived mechanism with scenario priors",
+      "use": "converts authorized budgets into delivered procurement, services and aid"
+    },
+    {
+      "family": "fiscal illusion and common-pool budgeting",
+      "provenance": "fiscal federalism and political budget literature",
+      "identification": "derived mechanism with scenario priors",
+      "use": "creates bounded fiscal drag and debt-stress feedback"
+    },
+    {
+      "family": "two-level games and alliance commitment",
+      "provenance": "international political economy literature",
+      "identification": "derived mechanism",
+      "use": "domestic ratification and reputation constrain alliance participation and aid authorization"
+    }
+  ],
+  "numerical_parameters": {
+    "file": "structural_priors.json",
+    "classification": "scenario_prior",
+    "warning": "Actor-specific coefficients are not presented as measured wartime causal effects. They require interval sensitivity and later empirical calibration before substantive interpretation."
+  },
+  "transformation_pipeline": [
+    "same-path monthly lagged/current state",
+    "bounded political incentives and veto hazard",
+    "budget softmax with exact simplex normalization",
+    "implementation multipliers",
+    "feedback to finance, production, aid, alliance and social information states"
+  ],
+  "missing_data_policy": "No silent imputation. Missing empirical coefficients remain explicit scenario priors with sensitivity requirements.",
+  "posthoc_terminal_adjustment": false
+}

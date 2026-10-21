@@ -355,6 +355,7 @@ def simulate_mechanisms(
     geometry_system=None, hybrid_system=None, topology_system=None,
     political_system=None, stochastic_geometry_system=None,
     transport_symplectic_system=None, rare_event_system=None,
+    public_choice_system=None,
 ):
     scenario = SCENARIOS[scenario_key]
     cfg = CASE_CONFIG[case]
@@ -398,6 +399,7 @@ def simulate_mechanisms(
         "dynamic_stochastic_geometry": stochastic_geometry_system is not None,
         "deep_transport_symplectic": transport_symplectic_system is not None,
         "hybrid_large_deviation": rare_event_system is not None,
+        "four_party_public_choice": public_choice_system is not None,
         "principal_agent": True,
     }
     if module_flags is not None:
@@ -508,6 +510,68 @@ def simulate_mechanisms(
             trade_volume_loss = economy_profile["trade_loss"][month]
             macro_trade_balance = np.zeros((n, 4))
             macro_government_balance = np.zeros((n, 4))
+        public_choice_factors = None
+        if flags["four_party_public_choice"] and public_choice_system is not None:
+            opening_shortage_cn = np.clip(
+                1.0 - np.min(s["stocks_cn"], axis=1), 0.0, 1.0
+            )
+            opening_shortage_def = np.clip(
+                1.0 - np.min(s["stocks_def"], axis=1), 0.0, 1.0
+            )
+            opening_shortage = np.column_stack((
+                opening_shortage_cn, opening_shortage_def,
+                0.35 * opening_shortage_def, 0.40 * opening_shortage_def,
+            ))
+            opening_damage = np.clip(
+                s["actor_homeland_damage"] + s["actor_island_chain_damage"]
+                + 0.12 * np.mean(s["actor_collapse"], axis=2),
+                0.0, 1.0,
+            )
+            public_choice_factors = public_choice_system.update(
+                month=month,
+                actor_support=s["actor_support"],
+                actor_damage=opening_damage,
+                actor_shortage=opening_shortage,
+                actor_output=np.mean(s["actor_sector_output"], axis=2),
+                financial_capacity=s["actor_financial_capacity"],
+                debt_stress=s["actor_debt_stress"],
+                leader_continuity=s["leader_continuity"],
+                political_resilience=s["actor_res"][:, :, 1],
+                actor_network=s["actor_network"],
+                actor_panic=s["actor_panic"],
+                actor_action=s["actor_action"],
+                actor_inflation=s["actor_inflation"],
+                conflict_intensity=regime_intensity[s["conflict_regime"]],
+                intervention_ceiling=np.array([us_ceiling, jp_ceiling]),
+                macro_government_balance=macro_government_balance,
+            )
+            us = np.minimum(
+                us_ceiling, us * public_choice_factors.alliance_multiplier[:, 0]
+            )
+            jp = np.minimum(
+                jp_ceiling, jp * public_choice_factors.alliance_multiplier[:, 1]
+            )
+            jp = np.minimum(
+                jp_ceiling, np.maximum(jp, np.minimum(0.55 * us, jp_ceiling))
+            )
+            s["actor_support"] = np.clip(
+                s["actor_support"] + public_choice_factors.support_shift,
+                0.01, 0.99,
+            )
+            s["actor_network"] = np.clip(
+                s["actor_network"]
+                * (0.98 + 0.02 * public_choice_factors.information_quality),
+                0.0, 1.0,
+            )
+            s["actor_panic"] = np.clip(
+                s["actor_panic"]
+                + 0.006 * (1.0 - public_choice_factors.information_quality),
+                0.0, 1.0,
+            )
+            s["actor_debt_stress"] = np.clip(
+                s["actor_debt_stress"] + public_choice_factors.fiscal_drag,
+                0.0, 1.5,
+            )
         energy_opening = energy_system.current() if energy_system is not None else None
         hybrid_factors = None
         topology_factors = None
@@ -527,7 +591,12 @@ def simulate_mechanisms(
             ) * s["leader_continuity"]
             hybrid_factors = hybrid_system.update_filippov(
                 logistics_service=opening_logistics,
-                financial_capacity=s["actor_financial_capacity"],
+                financial_capacity=(
+                    s["actor_financial_capacity"]
+                    * public_choice_factors.bureaucratic_execution
+                    if public_choice_factors is not None
+                    else s["actor_financial_capacity"]
+                ),
                 debt_stress=np.clip(s["actor_debt_stress"], 0.0, 1.0),
                 stock_shortage=opening_shortage,
                 support=s["actor_support"],
@@ -570,7 +639,12 @@ def simulate_mechanisms(
                 financial_capacity=s["actor_financial_capacity"],
                 debt_stress=s["actor_debt_stress"],
                 leader_continuity=s["leader_continuity"],
-                political_resilience=s["actor_res"][:, :, 1],
+                political_resilience=(
+                    s["actor_res"][:, :, 1]
+                    * public_choice_factors.policy_feasibility
+                    if public_choice_factors is not None
+                    else s["actor_res"][:, :, 1]
+                ),
                 conflict_regime=s["conflict_regime"],
                 regime_duration=s["regime_duration"],
                 land_control=s["land"],
@@ -1477,6 +1551,16 @@ def simulate_mechanisms(
             financial_stress = np.clip(
                 financial_stress + 0.45 * s["actor_social_fiscal_drag"], 0.0, 1.0
             )
+            if public_choice_factors is not None:
+                financial_fiscal = np.clip(
+                    financial_fiscal
+                    * public_choice_factors.bureaucratic_execution,
+                    0.02, 1.0,
+                )
+                financial_stress = np.clip(
+                    financial_stress + public_choice_factors.fiscal_drag,
+                    0.0, 1.0,
+                )
             s["actor_financial_capacity"] = np.clip(
                 0.40 * financial_fiscal + 0.35 * financial_credit
                 + 0.25 * financial_payment, 0.05, 1.0
@@ -1585,6 +1669,9 @@ def simulate_mechanisms(
         ) * firm_skill_fill
         military_orders = 0.006 + 0.025 * actor_mobil + 0.008 * actor_shortage
         civilian_orders = np.clip(0.015 * (1.0 - 0.60 * s["actor_inflation"]), 0.003, 0.020)
+        if public_choice_factors is not None:
+            military_orders *= public_choice_factors.military_order_factor
+            civilian_orders *= public_choice_factors.civilian_order_factor
         order_demand = np.stack([military_orders, civilian_orders], axis=2) + 0.05 * s["actor_order_backlog"]
         transport_supply = 0.030 * s["actor_sector_output"]
         if flags["optimal_transport"]:
@@ -1660,6 +1747,8 @@ def simulate_mechanisms(
         production_function[:, :, 0] *= trade_industry_factor
         if mechanism_factors is not None:
             production_function[:, :, 0] *= mechanism_factors.procurement_factor
+        if public_choice_factors is not None:
+            production_function[:, :, 0] *= public_choice_factors.procurement_factor
         production_function[:, :, 1:] *= trade_gdp_factor[:, :, None]
         if energy_opening is not None:
             production_function[:, :, 0] *= energy_opening.production
@@ -1680,6 +1769,9 @@ def simulate_mechanisms(
         if mechanism_factors is not None:
             us_aid *= mechanism_factors.aid_multiplier[:, 2]
             japan_aid *= mechanism_factors.aid_multiplier[:, 3]
+        if public_choice_factors is not None:
+            us_aid *= public_choice_factors.aid_authorization[:, 0]
+            japan_aid *= public_choice_factors.aid_authorization[:, 1]
         minor_aid = 0.003 * minor * taiwan_need
         total_aid = np.clip(us_aid + japan_aid + minor_aid, 0.0, 0.025)
         aid_flow = np.zeros((n, 4))
@@ -2493,6 +2585,10 @@ def simulate_mechanisms(
                     "hybrid_large_deviation": (
                         rare_event_system.diagnostics()
                         if rare_event_system is not None else None
+                    ),
+                    "four_party_public_choice": (
+                        public_choice_system.diagnostics()
+                        if public_choice_system is not None else None
                     ),
                 },
             }

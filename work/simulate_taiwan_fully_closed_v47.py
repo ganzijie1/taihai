@@ -145,13 +145,25 @@ def run(
     stochastic_geometry_factory=None,
     transport_symplectic_factory=None,
     rare_event_factory=None,
+    public_choice_factory=None,
     econometric_draws: dict[str, np.ndarray] | None = None,
     traceability_path: Path = TRACEABILITY,
     coupling_audit_path: Path = COUPLING_AUDIT,
+    path_group_names: tuple[str, ...] | list[str] | None = None,
+    paths_per_group: int | None = None,
 ):
     assert_complete_gate(traceability_path, coupling_audit_path)
     geometry_config = geometry_config or {}
     mfg_config = mfg_config or {}
+    group_names = tuple(path_group_names or ("baseline",))
+    group_size = int(paths_per_group or paths)
+    if paths != len(group_names) * group_size:
+        raise ValueError("paths must equal len(path_group_names) * paths_per_group")
+    group_slices = {
+        name: slice(index * group_size, (index + 1) * group_size)
+        for index, name in enumerate(group_names)
+    }
+    batched_variants = path_group_names is not None
     battle.PATHS = paths
     battle.MONTHS = months
     battle.HORIZON_MONTHS = tuple(y * 12 for y in battle.HORIZON_YEARS if y * 12 <= months)
@@ -248,15 +260,16 @@ def run(
         aft_delay_months=aft_delay,
     )
 
-    conditional: dict[str, dict[str, dict[int, np.ndarray]]] = {}
-    importance_weights: dict[str, np.ndarray] = {}
+    conditional: dict[tuple[str, str], dict[str, dict[int, np.ndarray]]] = {}
+    importance_weights: dict[tuple[str, str], np.ndarray] = {}
     rows = []
     diagnostics = {}
     common_seed = battle.SEED + LONG_TERM_END_YEAR * 101
-    conditional_by_2100: dict[str, dict[str, np.ndarray]] = {}
+    conditional_by_2100: dict[tuple[str, str], dict[str, np.ndarray]] = {}
     for case_index, case in enumerate(cases):
-        conditional[case] = {}
-        conditional_by_2100[case] = {}
+        for group in group_names:
+            conditional[(group, case)] = {}
+            conditional_by_2100[(group, case)] = {}
         for name in scenarios:
             scenario_index = all_scenarios.index(name)
             innovation_seed = common_seed + scenario_index * 100_003
@@ -271,6 +284,12 @@ def run(
                     paths, innovation_seed + 29_011, prewar["actor_support"]
                 )
                 if political_factory is not None else None
+            )
+            public_choice = (
+                public_choice_factory(
+                    paths, innovation_seed + 31_013, prewar["actor_support"]
+                )
+                if public_choice_factory is not None else None
             )
             mfg = ContinuousMultiPopulationMFG(
                 paths, innovation_seed + 37_013, prewar["actor_support"],
@@ -350,6 +369,7 @@ def run(
                 stochastic_geometry_system=stochastic_geometry,
                 transport_symplectic_system=transport_symplectic,
                 rare_event_system=rare_event,
+                public_choice_system=public_choice,
             )
             key = f"{case}|{name}"
             diagnostics[key] = {
@@ -377,26 +397,17 @@ def run(
                 "large_deviation": (
                     rare_event.diagnostics() if rare_event is not None else None
                 ),
+                "public_choice": (
+                    public_choice.diagnostics() if public_choice is not None else None
+                ),
                 "finance_accounting": {
                     "max_bilateral_aid_residual": finance.max_bilateral_aid_residual,
                 },
                 "campaign_horizons": {},
             }
-            conditional[case][name] = {}
+            for group in group_names:
+                conditional[(group, case)][name] = {}
             for horizon in battle.HORIZON_MONTHS:
-                achieved = snapshots[horizon]["broad_control_paths"].astype(float)
-                weights = snapshots[horizon]["importance_weight_paths"]
-                kernel_score = snapshots[horizon]["mfg_kernel_score_paths"]
-                kernel_low, kernel_high = np.quantile(kernel_score, [1.0 / 3.0, 2.0 / 3.0])
-                kernel_groups = (
-                    kernel_score <= kernel_low,
-                    (kernel_score > kernel_low) & (kernel_score <= kernel_high),
-                    kernel_score > kernel_high,
-                )
-                kernel_rates = [
-                    weighted_mean(achieved[mask], weights[mask])
-                    for mask in kernel_groups
-                ]
                 horizon_diag = snapshots[horizon]["diagnostics"]
                 diagnostics[key]["campaign_horizons"][str(horizon)] = {
                     **horizon_diag,
@@ -410,45 +421,68 @@ def run(
                         "mechanical_majority_control_share"
                     ],
                 }
-                if name in importance_weights:
-                    if not np.allclose(importance_weights[name], weights):
-                        raise RuntimeError("common-random-number tail weights diverged across cases")
-                else:
-                    importance_weights[name] = weights.copy()
-                conditional[case][name][horizon] = achieved
-                rows.append({
-                    "conflict_year": "pathwise_2026_2100",
-                    "horizon_years": horizon // 12,
-                    "case": case,
-                    "trade_scenario": trade.v43.SCENARIOS[name],
-                    "conditional_broad_control_rate": weighted_mean(achieved, weights),
-                    "kernel_uncertainty_low_rate": kernel_rates[0],
-                    "kernel_uncertainty_mid_rate": kernel_rates[1],
-                    "kernel_uncertainty_high_rate": kernel_rates[2],
-                    "importance_sampling_effective_sample_size": float(
-                        np.sum(weights) ** 2 / np.sum(weights ** 2)
-                    ),
-                    "mechanical_majority_control_share": weighted_mean(
-                        (
-                            (snapshots[horizon]["population_control_paths"] >= 0.50)
-                            & (snapshots[horizon]["administrative_control_paths"] >= 0.50)
-                            & (snapshots[horizon]["organized_defense_paths"] <= 0.35)
-                        ).astype(float), weights
-                    ),
-                    "status_quo_settlement_share": weighted_mean(
-                        (snapshots[horizon]["settlement_outcome_paths"] == 1).astype(float), weights
-                    ),
-                    "unification_settlement_share": weighted_mean(
-                        (snapshots[horizon]["settlement_outcome_paths"] == 2).astype(float), weights
-                    ),
-                })
+                for group in group_names:
+                    section = group_slices[group]
+                    achieved = snapshots[horizon]["broad_control_paths"][section].astype(float)
+                    weights = snapshots[horizon]["importance_weight_paths"][section]
+                    kernel_score = snapshots[horizon]["mfg_kernel_score_paths"][section]
+                    kernel_low, kernel_high = np.quantile(
+                        kernel_score, [1.0 / 3.0, 2.0 / 3.0]
+                    )
+                    kernel_groups = (
+                        kernel_score <= kernel_low,
+                        (kernel_score > kernel_low) & (kernel_score <= kernel_high),
+                        kernel_score > kernel_high,
+                    )
+                    kernel_rates = [
+                        weighted_mean(achieved[mask], weights[mask])
+                        for mask in kernel_groups
+                    ]
+                    weight_key = (group, name)
+                    if weight_key in importance_weights:
+                        if not np.allclose(importance_weights[weight_key], weights):
+                            raise RuntimeError("common-random-number tail weights diverged across cases")
+                    else:
+                        importance_weights[weight_key] = weights.copy()
+                    conditional[(group, case)][name][horizon] = achieved
+                    row = {
+                        "conflict_year": "pathwise_2026_2100",
+                        "horizon_years": horizon // 12,
+                        "case": case,
+                        "trade_scenario": trade.v43.SCENARIOS[name],
+                        "conditional_broad_control_rate": weighted_mean(achieved, weights),
+                        "kernel_uncertainty_low_rate": kernel_rates[0],
+                        "kernel_uncertainty_mid_rate": kernel_rates[1],
+                        "kernel_uncertainty_high_rate": kernel_rates[2],
+                        "importance_sampling_effective_sample_size": float(
+                            np.sum(weights) ** 2 / np.sum(weights ** 2)
+                        ),
+                        "mechanical_majority_control_share": weighted_mean(
+                            (
+                                (snapshots[horizon]["population_control_paths"][section] >= 0.50)
+                                & (snapshots[horizon]["administrative_control_paths"][section] >= 0.50)
+                                & (snapshots[horizon]["organized_defense_paths"][section] <= 0.35)
+                            ).astype(float), weights
+                        ),
+                        "status_quo_settlement_share": weighted_mean(
+                            (snapshots[horizon]["settlement_outcome_paths"][section] == 1).astype(float), weights
+                        ),
+                        "unification_settlement_share": weighted_mean(
+                            (snapshots[horizon]["settlement_outcome_paths"][section] == 2).astype(float), weights
+                        ),
+                    }
+                    if batched_variants:
+                        row["variant"] = group
+                    rows.append(row)
             terminal = snapshots[max(battle.HORIZON_MONTHS)]
             broad_month = terminal["broad_control_month_paths"]
-            conditional_by_2100[case][name] = (
-                terminal["broad_control_paths"]
-                & (broad_month > 0)
-                & (broad_month <= remaining_to_2100)
-            ).astype(float)
+            for group in group_names:
+                section = group_slices[group]
+                conditional_by_2100[(group, case)][name] = (
+                    terminal["broad_control_paths"][section]
+                    & (broad_month[section] > 0)
+                    & (broad_month[section] <= remaining_to_2100[section])
+                ).astype(float)
             if os.environ.get("TAIWAN_PROGRESS_LOG") == "1":
                 safe_case = case.encode("unicode_escape").decode("ascii")
                 safe_name = name.encode("unicode_escape").decode("ascii")
@@ -461,47 +495,57 @@ def run(
     aggregate = []
     calendar_2100 = []
     case_indices = [battle.CASES.index(case) for case in cases]
-    selected_choice_probability = choice.probabilities[:, case_indices]
-    selected_choice_probability /= np.maximum(
-        selected_choice_probability.sum(axis=1, keepdims=True), 1e-12
+    selected_choice_probability_all = choice.probabilities[:, case_indices]
+    selected_choice_probability_all /= np.maximum(
+        selected_choice_probability_all.sum(axis=1, keepdims=True), 1e-12
     )
-    for name in scenarios:
-        for horizon in battle.HORIZON_MONTHS:
-            matrix = np.column_stack([
-                conditional[case][name][horizon] for case in cases
+    for group in group_names:
+        section = group_slices[group]
+        selected_choice_probability = selected_choice_probability_all[section]
+        group_force_paths = force_paths[section]
+        for name in scenarios:
+            for horizon in battle.HORIZON_MONTHS:
+                matrix = np.column_stack([
+                    conditional[(group, case)][name][horizon] for case in cases
+                ])
+                weighted = np.sum(selected_choice_probability * matrix, axis=1)
+                unconditional = group_force_paths * weighted
+                tail_weights = importance_weights[(group, name)]
+                row = {
+                    "trade_scenario": trade.v43.SCENARIOS[name],
+                    "horizon_years": horizon // 12,
+                    "conditional_mean": weighted_mean(weighted, tail_weights),
+                    "conditional_p10_p50_p90": weighted_quantile(weighted, tail_weights),
+                    "unconditional_mean": weighted_mean(unconditional, tail_weights),
+                    "unconditional_p10_p50_p90": weighted_quantile(unconditional, tail_weights),
+                }
+                if batched_variants:
+                    row["variant"] = group
+                aggregate.append(row)
+            by_2100_matrix = np.column_stack([
+                conditional_by_2100[(group, case)][name] for case in cases
             ])
-            weighted = np.sum(selected_choice_probability * matrix, axis=1)
-            unconditional = force_paths * weighted
-            tail_weights = importance_weights[name]
-            aggregate.append({
+            by_2100_conditional = np.sum(
+                selected_choice_probability * by_2100_matrix, axis=1
+            )
+            by_2100_joint = group_force_paths * by_2100_conditional
+            weights = importance_weights[(group, name)]
+            calendar_row = {
                 "trade_scenario": trade.v43.SCENARIOS[name],
-                "horizon_years": horizon // 12,
-                "conditional_mean": weighted_mean(weighted, tail_weights),
-                "conditional_p10_p50_p90": weighted_quantile(weighted, tail_weights),
-                "unconditional_mean": weighted_mean(unconditional, tail_weights),
-                "unconditional_p10_p50_p90": weighted_quantile(unconditional, tail_weights),
-            })
-        by_2100_matrix = np.column_stack([
-            conditional_by_2100[case][name] for case in cases
-        ])
-        by_2100_conditional = np.sum(
-            selected_choice_probability * by_2100_matrix, axis=1
-        )
-        by_2100_joint = force_paths * by_2100_conditional
-        weights = importance_weights[name]
-        calendar_2100.append({
-            "trade_scenario": trade.v43.SCENARIOS[name],
-            "force_onset_cif": weighted_mean(force_paths, weights),
-            "peace_arrangement_cif": weighted_mean(survival.cumulative_incidence[:, 1], weights),
-            "legal_separation_cif": weighted_mean(survival.cumulative_incidence[:, 2], weights),
-            "status_quo_survival": weighted_mean(survival.survival, weights),
-            "conditional_broad_control_by_2100": weighted_mean(by_2100_conditional, weights),
-            "joint_force_and_broad_control_by_2100": weighted_mean(by_2100_joint, weights),
-            "force_without_broad_control_by_2100": weighted_mean(
-                force_paths * (1.0 - by_2100_conditional), weights
-            ),
-            "joint_p10_p50_p90": weighted_quantile(by_2100_joint, weights),
-        })
+                "force_onset_cif": weighted_mean(group_force_paths, weights),
+                "peace_arrangement_cif": weighted_mean(survival.cumulative_incidence[section, 1], weights),
+                "legal_separation_cif": weighted_mean(survival.cumulative_incidence[section, 2], weights),
+                "status_quo_survival": weighted_mean(survival.survival[section], weights),
+                "conditional_broad_control_by_2100": weighted_mean(by_2100_conditional, weights),
+                "joint_force_and_broad_control_by_2100": weighted_mean(by_2100_joint, weights),
+                "force_without_broad_control_by_2100": weighted_mean(
+                    group_force_paths * (1.0 - by_2100_conditional), weights
+                ),
+                "joint_p10_p50_p90": weighted_quantile(by_2100_joint, weights),
+            }
+            if batched_variants:
+                calendar_row["variant"] = group
+            calendar_2100.append(calendar_row)
     errors = []
     if survival.simplex_residual > 1e-10:
         errors.append("long-term competing-risk simplex residual")
@@ -757,14 +801,17 @@ def run(
             errors.append("global topological symbolic partition has no state movement")
         if topology_max_feedback_deviation <= 0.0:
             errors.append("global topological feedback is inactive")
-    for case in cases:
-        for name in scenarios:
-            sequence = [
-                weighted_mean(conditional[case][name][h], importance_weights[name])
-                for h in battle.HORIZON_MONTHS
-            ]
-            if any(right + 1e-12 < left for left, right in zip(sequence, sequence[1:])):
-                errors.append(f"{case}|{name}: nonmonotone absorbing event")
+    for group in group_names:
+        for case in cases:
+            for name in scenarios:
+                sequence = [
+                    weighted_mean(
+                        conditional[(group, case)][name][h], importance_weights[(group, name)]
+                    )
+                    for h in battle.HORIZON_MONTHS
+                ]
+                if any(right + 1e-12 < left for left, right in zip(sequence, sequence[1:])):
+                    errors.append(f"{group}|{case}|{name}: nonmonotone absorbing event")
     for row in calendar_2100:
         decomposition = (
             row["peace_arrangement_cif"] + row["legal_separation_cif"]
@@ -806,6 +853,13 @@ def run(
         "force_onset_mean": float(np.mean(force_paths)),
         "prewar_metadata": prewar["metadata"],
         "calendar_2100": calendar_2100,
+        "variant_batch": {
+            "enabled": batched_variants,
+            "names": list(group_names),
+            "paths_per_variant": group_size,
+            "explicit_variant_axis": batched_variants,
+            "common_random_numbers": batched_variants,
+        },
         "long_term_checkpoints": [
             {
                 "year": year,

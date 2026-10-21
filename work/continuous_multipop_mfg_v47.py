@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+import torch
 
 from cognitive_geometry_v52 import CognitiveInformationGeometry
 from fp_solvers_v52 import FokkerPlanckSolver
@@ -18,6 +19,11 @@ from numerical_acceleration import (
     backend_diagnostics,
     batched_thomas,
     resolve_backend,
+)
+from torch_mfg_acceleration import (
+    TorchRegularizedRiemannianAnderson,
+    bulk_device_to_numpy,
+    device_moments,
 )
 
 
@@ -506,6 +512,36 @@ class ContinuousMultiPopulationMFG:
             [collective, service, migration, hoarding, information_forward], axis=-1
         )
 
+    def _joint_action_response_device(
+        self, density: torch.Tensor, control: np.ndarray, damage: np.ndarray,
+        shortage: np.ndarray, inflation: np.ndarray, network: np.ndarray,
+    ) -> np.ndarray:
+        x = torch.as_tensor(self.x, dtype=density.dtype, device=density.device)
+        mean, positive = device_moments(density, x, self.dx)
+        control_device = torch.as_tensor(control, dtype=density.dtype, device=density.device)
+        positive_control = torch.sum(torch.clamp_min(control_device, 0.0) * density, dim=-1) * self.dx
+        negative_control = torch.sum(torch.clamp_min(-control_device, 0.0) * density, dim=-1) * self.dx
+        mean, positive, positive_control, negative_control = bulk_device_to_numpy(
+            mean, positive, positive_control, negative_control
+        )
+        collective = np.clip(positive, 0.0, 1.0)
+        service = np.clip(0.48 * positive_control + 0.34 * collective, 0.0, 1.0)
+        migration = np.clip(
+            0.34 * negative_control + 0.30 * damage[:, :, None]
+            + 0.18 * (1.0 - mean), 0.0, 1.0
+        )
+        hoarding = np.clip(
+            0.52 * shortage[:, :, None] + 0.28 * inflation[:, :, None]
+            + 0.20 * negative_control, 0.0, 1.0
+        )
+        information_forward = np.clip(
+            network[:, :, None] * (0.25 + 0.55 * collective)
+            + 0.20 * positive_control, 0.0, 1.0
+        )
+        return np.stack(
+            [collective, service, migration, hoarding, information_forward], axis=-1
+        )
+
     def _effective_graphon(
         self, damage: np.ndarray, shortage: np.ndarray, network: np.ndarray,
         common_noise: np.ndarray, jump_signal: np.ndarray,
@@ -828,7 +864,20 @@ class ContinuousMultiPopulationMFG:
             + 0.28 * financial_stress + 0.30 * contagion_fatigue
         )[:, :, None]
 
-        calendar_opening_density = self.density.copy()
+        device_resident = bool(
+            self.full_wfr_jko and self.riemannian_anderson_enabled
+            and self.fp_solver.backend.startswith("torch")
+            and str(self.fp_solver.device).startswith("cuda")
+            and torch.cuda.is_available()
+        )
+        calendar_opening_density_host = self.density.copy()
+        calendar_opening_density = (
+            torch.as_tensor(
+                calendar_opening_density_host,
+                dtype=self.fp_solver.dtype, device=self.fp_solver.device,
+            )
+            if device_resident else calendar_opening_density_host
+        )
         if (
             self.advanced_graphon and self.geometry_enabled
             and not self.full_wfr_jko
@@ -840,18 +889,33 @@ class ContinuousMultiPopulationMFG:
         else:
             opening_density = calendar_opening_density
             wfr_distance = 0.0
-        opening_engagement_mass = self.engagement_mass.copy()
-        candidate_engagement_mass = opening_engagement_mass.copy()
+        opening_engagement_mass_host = self.engagement_mass.copy()
+        opening_engagement_mass = (
+            torch.as_tensor(
+                opening_engagement_mass_host, dtype=self.fp_solver.dtype,
+                device=self.fp_solver.device,
+            )
+            if device_resident else opening_engagement_mass_host
+        )
+        candidate_engagement_mass = opening_engagement_mass.clone() if device_resident else opening_engagement_mass.copy()
         reaction_fitness = self._reaction_fitness(
             common_noise, jump_signal, network
         )
-        candidate = opening_density.copy()
+        if device_resident:
+            reaction_fitness = torch.as_tensor(
+                reaction_fitness, dtype=self.fp_solver.dtype, device=self.fp_solver.device
+            )
+            diffusion_device = torch.as_tensor(
+                self.diffusion * np.sqrt(0.075),
+                dtype=self.fp_solver.dtype, device=self.fp_solver.device,
+            )
+        candidate = opening_density.clone() if device_resident else opening_density.copy()
         value = self.value.copy()
         residual = np.inf
         mean_residual = np.inf
         density_residual = np.inf
-        bellman_residual_grid = np.full_like(candidate, np.inf)
-        control = np.zeros_like(candidate)
+        bellman_residual_grid = np.full_like(self.density, np.inf)
+        control = np.zeros_like(self.density)
         minor_action = self.previous_joint_action.copy()
         major_action = self.major_action.copy()
         major_target = major_action.copy()
@@ -870,7 +934,12 @@ class ContinuousMultiPopulationMFG:
             ),
         )
         accelerator = (
-            RegularizedRiemannianAnderson(
+            TorchRegularizedRiemannianAnderson(
+                depth=self.anderson_depth,
+                damping=0.52,
+                regularization=self.riemannian_anderson_regularization,
+            )
+            if device_resident else RegularizedRiemannianAnderson(
                 depth=self.anderson_depth,
                 damping=0.52,
                 regularization=self.riemannian_anderson_regularization,
@@ -893,7 +962,14 @@ class ContinuousMultiPopulationMFG:
             else max_fixed_point_iterations
         )
         for iteration in range(iteration_budget):
-            mean, _ = self._moments(candidate)
+            if device_resident:
+                x_device = torch.as_tensor(
+                    self.x, dtype=candidate.dtype, device=candidate.device
+                )
+                mean_device, _ = device_moments(candidate, x_device, self.dx)
+                mean = mean_device.detach().cpu().numpy()
+            else:
+                mean, _ = self._moments(candidate)
             actor_mean = np.sum(mean * self.age_weights[None, None, :], axis=2)
             if self.advanced_graphon:
                 state_field, network_action_field, major_field = self._multilayer_fields(
@@ -955,8 +1031,13 @@ class ContinuousMultiPopulationMFG:
             value, control, bellman_residual_grid, policy_used = self._solve_hjb(
                 utility, base_drift, value, effective_control_cost
             )
-            action_new = self._joint_action_response(
-                candidate, control, damage, shortage, inflation, network
+            action_new = (
+                self._joint_action_response_device(
+                    candidate, control, damage, shortage, inflation, network
+                )
+                if device_resident else self._joint_action_response(
+                    candidate, control, damage, shortage, inflation, network
+                )
             )
             action_residual = float(np.max(np.abs(action_new - minor_action)))
             if self.riemannian_trust_region_enabled:
@@ -993,39 +1074,55 @@ class ContinuousMultiPopulationMFG:
             # endpoint mean field with that single monthly transition; they
             # must not advance calendar time repeatedly inside one month.
             if self.full_wfr_jko:
+                drift_input = (
+                    torch.as_tensor(
+                        drift * 0.075, dtype=candidate.dtype, device=candidate.device
+                    ) if device_resident else drift * 0.075
+                )
                 evolved, candidate_engagement_mass, wfr_diagnostic = (
                     self.fp_solver.step_repeated_unbalanced(
                         opening_density, opening_engagement_mass,
-                        drift * 0.075, self.diffusion * np.sqrt(0.075),
+                        drift_input,
+                        diffusion_device if device_resident else self.diffusion * np.sqrt(0.075),
                         reaction_fitness, dt=1.0 / 3.0, repeats=3,
+                        defer_diagnostics=device_resident,
                     )
                 )
-                self.max_full_wfr_conditional_residual = max(
-                    self.max_full_wfr_conditional_residual,
-                    wfr_diagnostic.conditional_mass_residual,
-                )
-                self.max_full_wfr_stock_residual = max(
-                    self.max_full_wfr_stock_residual,
-                    wfr_diagnostic.stock_accounting_residual,
-                )
-                wfr_distance = max(
-                    wfr_distance,
-                    2.0 * float(np.max(np.abs(
-                        np.sqrt(np.maximum(candidate_engagement_mass, 0.0))
-                        - np.sqrt(np.maximum(opening_engagement_mass, 0.0))
-                    ))) + np.sqrt(max(wfr_diagnostic.action, 0.0)),
-                )
+                if not device_resident:
+                    self.max_full_wfr_conditional_residual = max(
+                        self.max_full_wfr_conditional_residual,
+                        wfr_diagnostic.conditional_mass_residual,
+                    )
+                    self.max_full_wfr_stock_residual = max(
+                        self.max_full_wfr_stock_residual,
+                        wfr_diagnostic.stock_accounting_residual,
+                    )
+                    wfr_distance = max(
+                        wfr_distance,
+                        2.0 * float(np.max(np.abs(
+                            np.sqrt(np.maximum(candidate_engagement_mass, 0.0))
+                            - np.sqrt(np.maximum(opening_engagement_mass, 0.0))
+                        ))) + np.sqrt(max(wfr_diagnostic.action, 0.0)),
+                    )
             else:
                 evolved = self._fp_step(
                     opening_density, drift, self.diffusion, dt=0.025, repeats=3
                 )
-            old_mean, _ = self._moments(candidate)
-            new_mean, _ = self._moments(evolved)
-            mean_residual = float(np.max(np.abs(new_mean - old_mean)))
-            density_by_population = np.sum(
-                np.abs(evolved - candidate), axis=-1
-            ) * self.dx
-            density_residual = float(np.max(density_by_population))
+            if device_resident:
+                new_mean_device, _ = device_moments(evolved, x_device, self.dx)
+                convergence = torch.stack((
+                    torch.max(torch.abs(new_mean_device - mean_device)),
+                    torch.max(torch.sum(torch.abs(evolved - candidate), dim=-1) * self.dx),
+                )).detach().cpu().numpy()
+                mean_residual, density_residual = map(float, convergence)
+            else:
+                old_mean, _ = self._moments(candidate)
+                new_mean, _ = self._moments(evolved)
+                mean_residual = float(np.max(np.abs(new_mean - old_mean)))
+                density_by_population = np.sum(
+                    np.abs(evolved - candidate), axis=-1
+                ) * self.dx
+                density_residual = float(np.max(density_by_population))
             residual = max(
                 mean_residual, density_residual,
                 action_residual if self.advanced_graphon else 0.0,
@@ -1065,10 +1162,32 @@ class ContinuousMultiPopulationMFG:
                 self.max_wfr_strang_mass_residual,
                 float(np.max(np.abs(np.sum(candidate, axis=-1) * self.dx - 1.0))),
             )
-        if self.full_wfr_jko:
-            self.engagement_mass = np.clip(
-                candidate_engagement_mass, 0.05, 2.50
+        if device_resident:
+            device_diagnostic = self.fp_solver.flush_device_diagnostics()
+            self.density, self.engagement_mass = bulk_device_to_numpy(
+                candidate, torch.clamp(candidate_engagement_mass, 0.05, 2.50)
             )
+            if device_diagnostic is not None:
+                self.max_full_wfr_conditional_residual = max(
+                    self.max_full_wfr_conditional_residual,
+                    device_diagnostic.conditional_mass_residual,
+                )
+                self.max_full_wfr_stock_residual = max(
+                    self.max_full_wfr_stock_residual,
+                    device_diagnostic.stock_accounting_residual,
+                )
+                wfr_distance = max(
+                    wfr_distance,
+                    2.0 * float(np.max(np.abs(
+                        np.sqrt(np.maximum(self.engagement_mass, 0.0))
+                        - np.sqrt(np.maximum(opening_engagement_mass_host, 0.0))
+                    ))) + np.sqrt(max(device_diagnostic.action, 0.0)),
+                )
+            candidate = self.density
+            candidate_engagement_mass = self.engagement_mass
+            calendar_opening_density = calendar_opening_density_host
+        if self.full_wfr_jko:
+            self.engagement_mass = np.clip(candidate_engagement_mass, 0.05, 2.50)
             self.min_engagement_mass = min(
                 self.min_engagement_mass, float(np.min(self.engagement_mass))
             )
@@ -1078,7 +1197,9 @@ class ContinuousMultiPopulationMFG:
             self.max_wfr_distance = max(self.max_wfr_distance, wfr_distance)
         self.density = candidate
         if self.riemannian_anderson_enabled:
-            self.riemannian_anderson_diagnostics = accelerator.diagnostics
+            self.riemannian_anderson_diagnostics = (
+                accelerator.diagnostics() if device_resident else accelerator.diagnostics
+            )
         self.value = value
         self.major_action = np.clip(major_action, -1.0, 1.0)
         if self.belief_system is not None:
@@ -1106,8 +1227,12 @@ class ContinuousMultiPopulationMFG:
         self.max_fixed_point_iterations_used = max(
             self.max_fixed_point_iterations_used, fixed_point_iterations
         )
-        self.anderson_accepted_paths += accelerator.diagnostics.accepted_paths
-        self.anderson_rejected_paths += accelerator.diagnostics.rejected_paths
+        anderson_diagnostics = (
+            self.riemannian_anderson_diagnostics
+            if self.riemannian_anderson_enabled else accelerator.diagnostics
+        )
+        self.anderson_accepted_paths += anderson_diagnostics.accepted_paths
+        self.anderson_rejected_paths += anderson_diagnostics.rejected_paths
         self.max_fisher_rao_distance = max(
             self.max_fisher_rao_distance, fisher_rao_distance
         )

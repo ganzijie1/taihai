@@ -7,11 +7,14 @@ import os
 from functools import partial
 from pathlib import Path
 
+import numpy as np
+
 import dynamic_macro_equilibrium_v47 as macro_core
 import simulate_taiwan_fully_closed_v82 as v82
 import simulate_taiwan_fully_closed_v83 as v83
 from particle_international_economics_v83 import StructuralInternationalCGEV83
 from statistical_contact_mfg_v84 import StatisticalContactMFGV84
+from variant_batching import VariantBatchLayout, shared_variant_random_context
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -46,6 +49,12 @@ def complete_model_gate() -> tuple[bool, list[str]]:
 def validate_v84(diagnostics: dict, months: int) -> None:
     v83.validate_v83(diagnostics, months)
     errors: list[str] = []
+    required_components = {
+        "nonparametric", "multivariate", "time_series", "wavelet", "contact",
+        "wavelet_temporal", "wavelet_coherence", "wavelet_graph",
+        "wavelet_scattering", "contact_military", "contact_economic",
+        "contact_financial", "contact_social",
+    }
     for cell, item in diagnostics.items():
         layer = item.get("mfg", {}).get("v84_statistical_multiscale_contact")
         if layer is None:
@@ -61,7 +70,10 @@ def validate_v84(diagnostics: dict, months: int) -> None:
             "feedback active": layer["maximum_feedback_shift"] > 0.0,
             "no duplicate state": not layer["structural_state_duplication"],
             "no posthoc": not layer["terminal_probability_adjustment"],
-            "all five layers enabled": all(layer["enabled"].values()),
+            "component registry": required_components <= set(layer["enabled"]),
+            "boolean switches": all(
+                isinstance(value, bool) for value in layer["enabled"].values()
+            ),
         }
         errors.extend(f"{cell}: {name}" for name, ok in checks.items() if not ok)
     if errors:
@@ -138,6 +150,41 @@ def run(paths: int = 128, months: int = 360, *,
         v82.v81.DifferentialManifoldMFGV81 = old_mfg
         v82.TRACE, v82.AUDIT, v82.FREEZE = old_paths
     validate_v84(result[2], months)
+    return result
+
+
+def run_variant_batch(
+    paths: int, months: int, variant_specs: dict[str, dict], **kwargs,
+):
+    """Execute ablations as one explicit variant-path state batch with CRN."""
+    if not variant_specs:
+        raise ValueError("variant_specs must not be empty")
+    layout = VariantBatchLayout(tuple(variant_specs), int(paths))
+    flag_names = (
+        "nonparametric", "multivariate", "time_series", "wavelet", "contact",
+        "wavelet_temporal", "wavelet_coherence", "wavelet_graph",
+        "wavelet_scattering", "contact_military", "contact_economic",
+        "contact_financial", "contact_social",
+    )
+    flag_values = {}
+    for flag in flag_names:
+        by_variant = np.array([
+            bool(variant_specs[name].get(f"{flag}_enabled", True))
+            for name in layout.names
+        ])
+        flag_values[f"{flag}_enabled"] = np.repeat(by_variant, layout.paths_per_variant)
+    with shared_variant_random_context(layout):
+        result = run(
+            paths=layout.total_paths, months=months,
+            path_group_names=layout.names, paths_per_group=layout.paths_per_variant,
+            **flag_values, **kwargs,
+        )
+    result[3]["variant_batch"].update({
+        "state_shape_prefix": [layout.variants, layout.paths_per_variant],
+        "variant_count": layout.variants,
+        "shared_exogenous_draws": True,
+        "independent_endogenous_states": True,
+    })
     return result
 
 

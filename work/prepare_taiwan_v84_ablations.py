@@ -9,6 +9,25 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "outputs"
 FREEZE = OUT / "taiwan_v84_frozen_specification.json"
 PLAN = OUT / "taiwan_v84_ablation_plan.json"
+SOURCE_FILES = (
+    "requirements-windows-cuda.txt",
+    "work/fp_solvers_v52.py",
+    "work/torch_mfg_acceleration.py",
+    "work/continuous_multipop_mfg_v47.py",
+    "work/variant_batching.py",
+    "work/simulate_taiwan_fully_closed_v47.py",
+    "work/simulate_taiwan_fully_closed_v61.py",
+    "work/simulate_taiwan_fully_closed_v62.py",
+    "work/simulate_taiwan_fully_closed_v64.py",
+    "work/statistical_contact_v84.py",
+    "work/statistical_contact_mfg_v84.py",
+    "work/simulate_taiwan_fully_closed_v84.py",
+    "work/simulate_taiwan_v84_checkpointed.py",
+    "work/run_taiwan_v84_formal.py",
+    "work/diagnose_taiwan_v84_acceleration.py",
+    "data/statistical_contact_v84/structural_priors.json",
+    "outputs/taiwan_v84_acceleration_diagnostic.json",
+)
 
 
 def sha256(path: Path) -> str:
@@ -37,9 +56,20 @@ def main() -> None:
     PLAN.write_text(json.dumps({
         "model_version": "V8.4-STATISTICAL-MULTISCALE-CONTACT",
         "status": "FROZEN",
+        "paths": 128,
+        "months": 360,
+        "scenario_cells": 30,
+        "variant_count": len(variants),
+        "total_cells": len(variants) * 30,
         "freeze_sha256": sha256(FREEZE),
+        "source_hashes": {
+            relative: sha256(ROOT / relative) for relative in SOURCE_FILES
+        },
         "matched_seeds_paths_clock": True,
         "one_component_disabled_per_variant": True,
+        "execution_mode": "explicit_variant_path_batch",
+        "persistent_worker_cells": 30,
+        "cuda_resident_mfg_wfr": True,
         "variants": {name: {"kwargs": kwargs, "disabled_only": sorted(kwargs)}
                      for name, kwargs in variants.items()},
         "simulation_executed": False,

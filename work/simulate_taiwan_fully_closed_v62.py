@@ -62,7 +62,8 @@ def run(paths: int = 128, months: int = 360,
         sector_flags: dict | None = None,
         stochastic_geometry_factory=None,
         transport_symplectic_factory=None,
-        rare_event_factory=None):
+        rare_event_factory=None, path_group_names=None,
+        paths_per_group: int | None = None):
     draws = v61.load_frozen_draws(paths)
     macro_factory = (
         CoupledSectoralEconomicSystemV62
@@ -94,6 +95,8 @@ def run(paths: int = 128, months: int = 360,
             rare_event_factory=rare_event_factory,
             traceability_path=TRACE,
             coupling_audit_path=AUDIT,
+            path_group_names=path_group_names,
+            paths_per_group=paths_per_group,
         )
     finally:
         core.ContinuousMultiPopulationMFG = original_mfg

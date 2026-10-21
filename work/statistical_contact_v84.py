@@ -579,18 +579,30 @@ class StatisticalContactSystemV84:
             else raw_kernel.mean(axis=tuple(range(raw_kernel.ndim - 2)))
         )
         self.kernel /= np.maximum(self.kernel.sum(axis=1, keepdims=True), 1.0e-12)
-        self.flags = dict(nonparametric=nonparametric_enabled,
-                          multivariate=multivariate_enabled,
-                          time_series=time_series_enabled,
-                          wavelet=wavelet_enabled, contact=contact_enabled,
-                          wavelet_temporal=wavelet_temporal_enabled,
-                          wavelet_coherence=wavelet_coherence_enabled,
-                          wavelet_graph=wavelet_graph_enabled,
-                          wavelet_scattering=wavelet_scattering_enabled,
-                          contact_military=contact_military_enabled,
-                          contact_economic=contact_economic_enabled,
-                          contact_financial=contact_financial_enabled,
-                          contact_social=contact_social_enabled)
+        raw_flags = dict(nonparametric=nonparametric_enabled,
+                         multivariate=multivariate_enabled,
+                         time_series=time_series_enabled,
+                         wavelet=wavelet_enabled, contact=contact_enabled,
+                         wavelet_temporal=wavelet_temporal_enabled,
+                         wavelet_coherence=wavelet_coherence_enabled,
+                         wavelet_graph=wavelet_graph_enabled,
+                         wavelet_scattering=wavelet_scattering_enabled,
+                         contact_military=contact_military_enabled,
+                         contact_economic=contact_economic_enabled,
+                         contact_financial=contact_financial_enabled,
+                         contact_social=contact_social_enabled)
+        self.flag_masks = {}
+        for name, value in raw_flags.items():
+            mask = np.asarray(value, dtype=bool)
+            if mask.ndim == 0:
+                mask = np.full(paths, bool(mask))
+            if mask.shape != (paths,):
+                raise ValueError(f"{name}_enabled must be scalar or have shape (paths,)")
+            self.flag_masks[name] = mask
+        self.flags = {name: bool(np.any(mask)) for name, mask in self.flag_masks.items()}
+        self.enabled_fraction = {
+            name: float(np.mean(mask)) for name, mask in self.flag_masks.items()
+        }
         online, wavelet, contact = cfg["online_estimator"], cfg["wavelet"], cfg["contact"]
         self.ff = np.asarray(online["forgetting_factor"])[None, :]
         self.q = np.asarray(online["kalman_process_variance"])[None, :]
@@ -608,10 +620,10 @@ class StatisticalContactSystemV84:
         self.feature_cap = float(wavelet["feature_cap"])
         self.contact_load = np.stack((contact["military_load"], contact["economic_load"],
                                       contact["financial_load"], contact["social_load"]), axis=-1)[None]
-        self.contact_domain_mask = np.asarray([
-            contact_military_enabled, contact_economic_enabled,
-            contact_financial_enabled, contact_social_enabled,
-        ], dtype=float)[None, None, :]
+        self.contact_domain_mask = np.stack([
+            self.flag_masks["contact_military"], self.flag_masks["contact_economic"],
+            self.flag_masks["contact_financial"], self.flag_masks["contact_social"],
+        ], axis=-1)[:, None, :].astype(float)
         self.contact_memory = np.asarray(contact["memory_decay"])[None, :, None]
         self.contact_increment_cap = float(contact["maximum_monthly_increment"])
         self.contact_cap = float(contact["maximum_cumulative_loss"])
@@ -681,14 +693,10 @@ class StatisticalContactSystemV84:
         graph *= self.graph_diffusion
         scattering = np.mean(np.abs(detail_stack), axis=(2, 3))
         energy = np.sqrt(np.mean(self.energy, axis=(2, 3)))
-        if not self.flags["wavelet_temporal"]:
-            energy.fill(0.0)
-        if not self.flags["wavelet_coherence"]:
-            coherence.fill(0.0)
-        if not self.flags["wavelet_graph"]:
-            graph.fill(0.0)
-        if not self.flags["wavelet_scattering"]:
-            scattering.fill(0.0)
+        energy *= self.flag_masks["wavelet_temporal"][:, None]
+        coherence *= self.flag_masks["wavelet_coherence"][:, None, None]
+        graph *= self.flag_masks["wavelet_graph"][:, None]
+        scattering *= self.flag_masks["wavelet_scattering"][:, None]
         reconstruction = signals - (signals - np.sum(detail_stack, axis=2) / max(len(self.scales), 1))
         self.max_reconstruction_error = max(
             self.max_reconstruction_error,
@@ -710,16 +718,21 @@ class StatisticalContactSystemV84:
         innovation = economic - self.level
         predicted_variance = self.level_variance + self.q
         gain = predicted_variance / np.maximum(predicted_variance + self.r, 1.0e-12)
-        if self.flags["time_series"]:
-            self.level += gain * innovation
-            self.level_variance = np.maximum((1.0 - gain) * predicted_variance, 1.0e-8)
-            self.garch = np.maximum(
+        time_mask = self.flag_masks["time_series"][:, None]
+        if np.any(time_mask):
+            proposed_level = self.level + gain * innovation
+            proposed_variance = np.maximum((1.0 - gain) * predicted_variance, 1.0e-8)
+            proposed_garch = np.maximum(
                 (1.0 - self.alpha - self.beta) * 0.02
                 + self.alpha * innovation * innovation + self.beta * self.garch,
                 1.0e-8,
             )
             event = (state["jump_signal"] > 0.05).astype(float)
-            self.hawkes = self.hawkes_decay * self.hawkes + self.hawkes_excitation * event
+            proposed_hawkes = self.hawkes_decay * self.hawkes + self.hawkes_excitation * event
+            self.level = np.where(time_mask, proposed_level, self.level)
+            self.level_variance = np.where(time_mask, proposed_variance, self.level_variance)
+            self.garch = np.where(time_mask, proposed_garch, self.garch)
+            self.hawkes = np.where(time_mask, proposed_hawkes, self.hawkes)
         z_score = np.abs(innovation) / np.sqrt(np.maximum(self.garch + self.r, 1.0e-8))
         change = expit(2.0 * (z_score - self.change_threshold))
         target_regime = expit(1.8 * (self.level + 0.45 * np.sqrt(self.garch) + 0.35 * self.hawkes - 0.55))
@@ -734,8 +747,7 @@ class StatisticalContactSystemV84:
         self.max_covariance_condition = max(self.max_covariance_condition, float(np.linalg.cond(covariance)))
         self.max_graphical_asymmetry = max(self.max_graphical_asymmetry,
                                            float(np.max(np.abs(precision - precision.T))))
-        if not self.flags["multivariate"]:
-            factor.fill(0.0)
+        factor *= self.flag_masks["multivariate"][:, None]
         self.max_factor = max(self.max_factor, float(np.max(np.abs(factor))))
 
         self.history[self.history_cursor] = signals
@@ -744,6 +756,10 @@ class StatisticalContactSystemV84:
         self.history_count += 1
         if self.flags["wavelet"]:
             wavelet_energy, coherence, graph = self._wavelet(signals)
+            master = self.flag_masks["wavelet"][:, None]
+            wavelet_energy *= master
+            coherence *= master
+            graph *= master
         else:
             wavelet_energy = np.zeros_like(economic)
             coherence = np.zeros_like(economic)
@@ -751,7 +767,12 @@ class StatisticalContactSystemV84:
 
         ordered_residual = self.residual_history[:min(self.history_count, self.max_history)]
         if self.flags["nonparametric"] and len(ordered_residual) >= 4:
-            radius = np.quantile(np.abs(ordered_residual), 1.0 - self.miscoverage, axis=0)
+            empirical_radius = np.quantile(
+                np.abs(ordered_residual), 1.0 - self.miscoverage, axis=0
+            )
+            parametric_radius = np.sqrt(np.maximum(self.garch, 1.0e-8))
+            mask = self.flag_masks["nonparametric"][:, None]
+            radius = np.where(mask, empirical_radius, parametric_radius)
             coverage = np.mean(np.abs(ordered_residual) <= radius[None], axis=0)
             self.minimum_conformal_coverage = min(self.minimum_conformal_coverage, float(np.min(coverage)))
         else:
@@ -761,8 +782,7 @@ class StatisticalContactSystemV84:
         loads = np.stack((operational, economic, state["financial_stress"], social), axis=-1)
         gamma = np.clip(self.contact_load * self.contact_domain_mask * loads,
                         0.0, self.contact_increment_cap)
-        if not self.flags["contact"]:
-            gamma.fill(0.0)
+        gamma *= self.flag_masks["contact"][:, None, None]
         increment = gamma * (1.0 - self.contact_state / self.contact_cap)
         # Memory is retained in the costate. The owned cumulative loss is
         # monotone unless an explicit resource-accounted reset is added later.
@@ -793,6 +813,10 @@ class StatisticalContactSystemV84:
         return {
             "months": self.months,
             "enabled": self.flags,
+            "enabled_fraction": self.enabled_fraction,
+            "variant_batched_flags": any(
+                0.0 < value < 1.0 for value in self.enabled_fraction.values()
+            ),
             "maximum_covariance_condition_number": self.max_covariance_condition,
             "maximum_graphical_precision_asymmetry": self.max_graphical_asymmetry,
             "maximum_wavelet_reconstruction_residual": self.max_reconstruction_error,

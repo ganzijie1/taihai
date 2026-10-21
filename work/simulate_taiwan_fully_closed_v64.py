@@ -57,7 +57,8 @@ def run(paths: int = 128, months: int = 360,
         cascade_enabled: bool = True,
         feedback_enabled: bool = True,
         transport_symplectic_factory=None,
-        rare_event_factory=None):
+        rare_event_factory=None, path_group_names=None,
+        paths_per_group: int | None = None):
     old = (v63.TRACE, v63.AUDIT, v63.FREEZE)
     v63.TRACE, v63.AUDIT, v63.FREEZE = TRACE, AUDIT, FREEZE
     factory = partial(
@@ -72,6 +73,8 @@ def run(paths: int = 128, months: int = 360,
             case_names=case_names, stochastic_geometry_factory=factory,
             transport_symplectic_factory=transport_symplectic_factory,
             rare_event_factory=rare_event_factory,
+            path_group_names=path_group_names,
+            paths_per_group=paths_per_group,
         )
     finally:
         v63.TRACE, v63.AUDIT, v63.FREEZE = old

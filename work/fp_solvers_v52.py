@@ -9,6 +9,7 @@ import numpy as np
 
 TORCH_AVAILABLE = importlib.util.find_spec("torch") is not None
 TORCHDIFFEQ_AVAILABLE = importlib.util.find_spec("torchdiffeq") is not None
+TRITON_AVAILABLE = importlib.util.find_spec("triton") is not None
 
 if TORCH_AVAILABLE:
     import torch
@@ -35,6 +36,13 @@ class WFRStepDiagnostics:
     cfl_number: float
     substeps: int
     action: float
+
+
+@dataclass
+class WFRDeviceStepDiagnostics:
+    reductions: "torch.Tensor"
+    cfl_number: float
+    substeps: int
 
 
 def _normalise_numpy(density: np.ndarray, dx: float) -> tuple[np.ndarray, float]:
@@ -71,11 +79,66 @@ def _torch_thomas(
             (rhs[..., index] - lower[..., index - 1] * d_values[index - 1])
             / denominator
         )
-    solved = [None] * grid
-    solved[-1] = d_values[-1]
+    solved = [d_values[-1]]
     for index in range(grid - 2, -1, -1):
-        solved[index] = d_values[index] - c_values[index] * solved[index + 1]
-    return torch.stack(solved, dim=-1)
+        solved.append(d_values[index] - c_values[index] * solved[-1])
+    return torch.stack(solved[::-1], dim=-1)
+
+
+def _signed_pivot_torch(value: "torch.Tensor", floor: float) -> "torch.Tensor":
+    sign = torch.where(value < 0.0, -torch.ones_like(value), torch.ones_like(value))
+    return sign * torch.clamp(torch.abs(value), min=floor)
+
+
+def _torch_pcr(
+    lower: "torch.Tensor", diagonal: "torch.Tensor", upper: "torch.Tensor",
+    rhs: "torch.Tensor", pivot_floor: float = 1.0e-12,
+) -> "torch.Tensor":
+    """Batched parallel cyclic reduction for arbitrary grid lengths."""
+    grid = diagonal.shape[-1]
+    a = torch.zeros_like(diagonal)
+    c = torch.zeros_like(diagonal)
+    a[..., 1:] = lower
+    c[..., :-1] = upper
+    b = diagonal.clone()
+    d = rhs.clone()
+    indices = torch.arange(grid, device=diagonal.device)
+    stride = 1
+    while stride < grid:
+        left_valid = (indices >= stride).view(*([1] * (b.ndim - 1)), grid)
+        right_valid = (indices + stride < grid).view(*([1] * (b.ndim - 1)), grid)
+        left_a = torch.roll(a, stride, dims=-1)
+        left_b = torch.roll(b, stride, dims=-1)
+        left_c = torch.roll(c, stride, dims=-1)
+        left_d = torch.roll(d, stride, dims=-1)
+        right_a = torch.roll(a, -stride, dims=-1)
+        right_b = torch.roll(b, -stride, dims=-1)
+        right_c = torch.roll(c, -stride, dims=-1)
+        right_d = torch.roll(d, -stride, dims=-1)
+        alpha = torch.where(
+            left_valid, -a / _signed_pivot_torch(left_b, pivot_floor),
+            torch.zeros_like(a),
+        )
+        beta = torch.where(
+            right_valid, -c / _signed_pivot_torch(right_b, pivot_floor),
+            torch.zeros_like(c),
+        )
+        a, b, c, d = (
+            torch.where(left_valid, alpha * left_a, torch.zeros_like(a)),
+            b + alpha * left_c + beta * right_a,
+            torch.where(right_valid, beta * right_c, torch.zeros_like(c)),
+            d + alpha * left_d + beta * right_d,
+        )
+        stride *= 2
+    return d / _signed_pivot_torch(b, pivot_floor)
+
+
+if TORCH_AVAILABLE and TRITON_AVAILABLE and hasattr(torch, "compile"):
+    _torch_thomas_compiled = torch.compile(
+        _torch_thomas, fullgraph=True, dynamic=True
+    )
+else:  # pragma: no cover - exercised only on CPU/minimal installations
+    _torch_thomas_compiled = None
 
 
 class FokkerPlanckSolver:
@@ -92,7 +155,7 @@ class FokkerPlanckSolver:
 
     def __init__(
         self, dx: float, backend: str = "auto", device: str = "auto",
-        dtype: str = "float64",
+        dtype: str = "float64", tridiagonal_solver: str = "auto",
     ):
         if backend not in self.VALID_BACKENDS:
             raise ValueError(f"unsupported FP backend {backend!r}")
@@ -109,6 +172,19 @@ class FokkerPlanckSolver:
         if backend == "torchdiffeq" and not TORCHDIFFEQ_AVAILABLE:
             raise RuntimeError("torchdiffeq backend requested but package is unavailable")
         self.backend = backend
+        if tridiagonal_solver not in {"auto", "compiled_thomas", "thomas", "pcr"}:
+            raise ValueError(
+                "tridiagonal_solver must be auto, compiled_thomas, thomas or pcr"
+            )
+        if tridiagonal_solver == "auto":
+            tridiagonal_solver = (
+                "compiled_thomas"
+                if str(device).startswith("cuda") and _torch_thomas_compiled is not None
+                else "thomas"
+            )
+        if tridiagonal_solver == "compiled_thomas" and _torch_thomas_compiled is None:
+            tridiagonal_solver = "thomas"
+        self.tridiagonal_solver = tridiagonal_solver
         self.max_mass_residual = 0.0
         self.minimum_density = math.inf
         self.max_cfl_number = 0.0
@@ -122,6 +198,17 @@ class FokkerPlanckSolver:
         self.minimum_wfr_measure = math.inf
         self.max_wfr_action = 0.0
         self.wfr_calls = 0
+        self.deferred_device_reductions = 0
+        self._device_diagnostic_window: list[torch.Tensor] = []
+        self._device_cfl_window: list[float] = []
+        self._device_substeps_window: list[int] = []
+
+    def _solve_tridiagonal(self, lower, diagonal, upper, rhs):
+        if self.tridiagonal_solver == "compiled_thomas":
+            return _torch_thomas_compiled(lower, diagonal, upper, rhs)
+        if self.tridiagonal_solver == "pcr":
+            return _torch_pcr(lower, diagonal, upper, rhs)
+        return _torch_thomas(lower, diagonal, upper, rhs)
 
     def _substeps(self, drift, dt: float) -> tuple[int, float]:
         if TORCH_AVAILABLE and torch.is_tensor(drift):
@@ -228,7 +315,7 @@ class FokkerPlanckSolver:
             diagonal[..., 1:-1] = (
                 diagonal[..., 1:-1] - lower[..., :-1] - upper[..., 1:]
             )
-            state = _torch_thomas(lower, diagonal, upper, advected)
+            state = self._solve_tridiagonal(lower, diagonal, upper, advected)
         minimum = float(torch.min(state).detach().cpu())
         state = torch.clamp(state, min=0.0)
         state, residual = _normalise_torch(state, self.dx)
@@ -432,7 +519,7 @@ class FokkerPlanckSolver:
         )
         substeps, cfl = self._substeps(drift, dt)
         h = dt / substeps
-        action = 0.0
+        action = torch.zeros((), dtype=state.dtype, device=state.device)
         for _ in range(substeps):
             interface = 0.5 * (drift[..., 1:] + drift[..., :-1])
             flux = torch.where(
@@ -458,19 +545,19 @@ class FokkerPlanckSolver:
                 diagonal[..., 1:-1] - lower[..., :-1] - upper[..., 1:]
             )
             state = torch.clamp(
-                _torch_thomas(lower, diagonal, upper, advected), min=0.0
+                self._solve_tridiagonal(lower, diagonal, upper, advected), min=0.0
             )
-            action = max(action, float(torch.max(
+            action = torch.maximum(action, torch.max(
                 torch.sum(
                     (torch.square(drift) + torch.square(reaction)) * state,
                     dim=-1,
                 ) * self.dx * h
-            ).detach().cpu()))
+            ))
         return state, substeps, cfl, action
 
     def step_repeated_unbalanced(
         self, density, mass, drift, sigma, reaction,
-        dt: float, repeats: int,
+        dt: float, repeats: int, defer_diagnostics: bool = False,
     ):
         """Joint conservative transport, diffusion and Fisher--Rao reaction.
 
@@ -512,13 +599,37 @@ class FokkerPlanckSolver:
             closing_density = measure / torch.clamp(
                 closing_mass[..., None], min=1.0e-15
             )
-            conditional_residual = float(torch.max(torch.abs(
-                torch.sum(closing_density, dim=-1) * self.dx - 1.0
-            )).detach().cpu())
-            stock_residual = float(torch.max(torch.abs(
-                torch.sum(measure, dim=-1) * self.dx - closing_mass
-            )).detach().cpu())
-            minimum = float(torch.min(measure).detach().cpu())
+            reductions = torch.stack((
+                torch.max(torch.abs(
+                    torch.sum(closing_density, dim=-1) * self.dx - 1.0
+                )),
+                torch.max(torch.abs(
+                    torch.sum(measure, dim=-1) * self.dx - closing_mass
+                )),
+                torch.min(measure),
+                torch.stack([item[2] for item in diagnostics]).max(),
+            ))
+            if defer_diagnostics and input_is_tensor:
+                self._device_diagnostic_window.append(reductions.detach())
+                self._device_cfl_window.append(float(cfl))
+                self._device_substeps_window.append(
+                    sum(item[0] for item in diagnostics)
+                )
+                combined = WFRDeviceStepDiagnostics(
+                    reductions=reductions, cfl_number=cfl,
+                    substeps=sum(item[0] for item in diagnostics),
+                )
+                self.wfr_calls += 1
+                self.calls += 1
+                self.physical_steps += repeats
+                self.total_substeps += combined.substeps
+                return closing_density, closing_mass, combined
+            reductions = reductions.detach().cpu().numpy()
+            self.deferred_device_reductions += 1
+            conditional_residual = float(reductions[0])
+            stock_residual = float(reductions[1])
+            minimum = float(reductions[2])
+            maximum_action = float(reductions[3])
             if not input_is_tensor:
                 closing_density = closing_density.detach().cpu().numpy()
                 closing_mass = closing_mass.detach().cpu().numpy()
@@ -542,6 +653,7 @@ class FokkerPlanckSolver:
                 np.sum(measure, axis=-1) * self.dx - closing_mass
             )))
             minimum = float(np.min(measure))
+            maximum_action = max(item[2] for item in diagnostics)
         combined = WFRStepDiagnostics(
             backend="torch_fvm" if use_torch else "numpy_fvm",
             conditional_mass_residual=conditional_residual,
@@ -549,7 +661,7 @@ class FokkerPlanckSolver:
             minimum_measure=minimum,
             cfl_number=max(item[1] for item in diagnostics),
             substeps=sum(item[0] for item in diagnostics),
-            action=max(item[2] for item in diagnostics),
+            action=maximum_action,
         )
         self.wfr_calls += 1
         self.calls += 1
@@ -569,12 +681,45 @@ class FokkerPlanckSolver:
         self.max_wfr_action = max(self.max_wfr_action, combined.action)
         return closing_density, closing_mass, combined
 
+    def flush_device_diagnostics(self) -> WFRStepDiagnostics | None:
+        """Reduce a monthly CUDA diagnostic window with one host transfer."""
+        if not self._device_diagnostic_window:
+            return None
+        values = torch.stack(self._device_diagnostic_window)
+        packed = torch.stack((
+            values[:, 0].max(), values[:, 1].max(), values[:, 2].min(),
+            values[:, 3].max(),
+        )).detach().cpu().numpy()
+        self._device_diagnostic_window.clear()
+        maximum_cfl = max(self._device_cfl_window)
+        total_substeps = sum(self._device_substeps_window)
+        self._device_cfl_window.clear()
+        self._device_substeps_window.clear()
+        self.deferred_device_reductions += 1
+        combined = WFRStepDiagnostics(
+            backend="torch_fvm", conditional_mass_residual=float(packed[0]),
+            stock_accounting_residual=float(packed[1]), minimum_measure=float(packed[2]),
+            cfl_number=maximum_cfl, substeps=total_substeps, action=float(packed[3]),
+        )
+        self.max_wfr_conditional_mass_residual = max(
+            self.max_wfr_conditional_mass_residual, combined.conditional_mass_residual
+        )
+        self.max_wfr_stock_accounting_residual = max(
+            self.max_wfr_stock_accounting_residual, combined.stock_accounting_residual
+        )
+        self.minimum_wfr_measure = min(self.minimum_wfr_measure, combined.minimum_measure)
+        self.max_wfr_action = max(self.max_wfr_action, combined.action)
+        self.max_cfl_number = max(self.max_cfl_number, combined.cfl_number)
+        return combined
+
     def diagnostics(self) -> dict:
         return {
             "backend": self.backend,
+            "tridiagonal_solver": self.tridiagonal_solver,
             "device": self.device,
             "torch_available": TORCH_AVAILABLE,
             "torchdiffeq_available": TORCHDIFFEQ_AVAILABLE,
+            "triton_available": TRITON_AVAILABLE,
             "max_mass_residual_before_normalisation": self.max_mass_residual,
             "minimum_density_before_projection": self.minimum_density,
             "max_advective_cfl": self.max_cfl_number,
@@ -584,6 +729,7 @@ class FokkerPlanckSolver:
             "host_to_device_transfers": self.host_to_device_transfers,
             "device_to_host_transfers": self.device_to_host_transfers,
             "wfr_calls": self.wfr_calls,
+            "deferred_device_reductions": self.deferred_device_reductions,
             "max_wfr_conditional_mass_residual": self.max_wfr_conditional_mass_residual,
             "max_wfr_stock_accounting_residual": self.max_wfr_stock_accounting_residual,
             "minimum_wfr_measure": self.minimum_wfr_measure,

@@ -10,6 +10,7 @@ OUT = ROOT / "outputs"
 WORK = ROOT / "work"
 DATA = ROOT / "data" / "statistical_contact_v84" / "structural_priors.json"
 DIAGNOSTIC = OUT / "taiwan_v84_diagnostic_only.json"
+ACCELERATION_DIAGNOSTIC = OUT / "taiwan_v84_acceleration_diagnostic.json"
 PARENT_TRACE = OUT / "taiwan_v83_traceability.json"
 PARENT_AUDIT = OUT / "taiwan_v83_static_coupling_audit.json"
 PARENT_FREEZE = OUT / "taiwan_v83_frozen_specification.json"
@@ -89,14 +90,28 @@ def main() -> None:
     implementation = WORK / "statistical_contact_v84.py"
     wrapper = WORK / "statistical_contact_mfg_v84.py"
     simulation = WORK / "simulate_taiwan_fully_closed_v84.py"
+    acceleration_sources = [
+        WORK / "fp_solvers_v52.py",
+        WORK / "torch_mfg_acceleration.py",
+        WORK / "continuous_multipop_mfg_v47.py",
+        WORK / "variant_batching.py",
+        WORK / "simulate_taiwan_fully_closed_v47.py",
+        WORK / "simulate_taiwan_v84_checkpointed.py",
+        WORK / "run_taiwan_v84_formal.py",
+        ROOT / "requirements-windows-cuda.txt",
+    ]
     required = [PARENT_TRACE, PARENT_AUDIT, PARENT_FREEZE, DATA, DIAGNOSTIC,
-                implementation, wrapper, simulation]
+                ACCELERATION_DIAGNOSTIC, implementation, wrapper, simulation,
+                *acceleration_sources]
     gaps = [str(path) for path in required if not path.exists()]
     parent_trace = json.loads(PARENT_TRACE.read_text(encoding="utf-8"))
     parent_audit = json.loads(PARENT_AUDIT.read_text(encoding="utf-8"))
     parent_freeze = json.loads(PARENT_FREEZE.read_text(encoding="utf-8"))
     ledger = json.loads(DATA.read_text(encoding="utf-8"))
     diagnostic = json.loads(DIAGNOSTIC.read_text(encoding="utf-8"))
+    acceleration_diagnostic = json.loads(
+        ACCELERATION_DIAGNOSTIC.read_text(encoding="utf-8")
+    )
     source = implementation.read_text(encoding="utf-8") + wrapper.read_text(encoding="utf-8")
     tokens = [
         "NonparametricToolkitV84", "MultivariateToolkitV84", "StatisticalContactSystemV84",
@@ -122,6 +137,21 @@ def main() -> None:
         gaps.append("parent V8.3 specification not frozen")
     if diagnostic.get("status") != "PASS":
         gaps.append("V8.4 diagnostic checks not passed")
+    if not str(acceleration_diagnostic.get("scope", "")).startswith("DIAGNOSTIC_ONLY"):
+        gaps.append("V8.4 acceleration diagnostic scope is invalid")
+    acceleration_checks = (
+        acceleration_diagnostic.get("variant_batch", {}).get(
+            "statistical_layer_batch_equivalence_error", 1.0
+        ) <= 1.0e-12
+        and acceleration_diagnostic.get("mfg_device_residency", {}).get(
+            "maximum_mass_residual", 1.0
+        ) <= 1.0e-12
+        and acceleration_diagnostic.get("mfg_cpu_gpu_zero_shock_regression", {}).get(
+            "density_max_abs_error", 1.0
+        ) <= 1.0e-12
+    )
+    if not acceleration_checks:
+        gaps.append("V8.4 acceleration equivalence or conservation diagnostic failed")
     if len(ledger.get("source_ledger", [])) != 5:
         gaps.append("the five-document source ledger is incomplete")
 
@@ -219,6 +249,7 @@ def main() -> None:
         "v84_document_heading_coverage": coverage,
         "v84_data_ledger": str(DATA),
         "v84_diagnostic": str(DIAGNOSTIC),
+        "v84_acceleration_diagnostic": str(ACCELERATION_DIAGNOSTIC),
     })
     TRACE.write_text(json.dumps(trace, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -231,6 +262,11 @@ def main() -> None:
         "document_heading_coverage_count": len(coverage),
         "document_heading_coverage_percent": 100.0 if not gaps else 0.0,
         "diagnostic_status": diagnostic.get("status"),
+        "acceleration_diagnostic_status": "PASS" if acceleration_checks else "BLOCKED",
+        "explicit_variant_path_batch": True,
+        "persistent_worker_pool": True,
+        "cuda_resident_mfg_wfr": True,
+        "compiled_thomas_with_pcr_crosscheck": True,
         "state_ownership_status": "PASS",
         "causal_clock_status": "PASS",
         "posthoc_probability_adjustment": False,
@@ -248,7 +284,10 @@ def main() -> None:
         ],
     }
     AUDIT.write_text(json.dumps(audit, ensure_ascii=False, indent=2), encoding="utf-8")
-    files = [implementation, wrapper, simulation, DATA, DIAGNOSTIC]
+    files = [
+        implementation, wrapper, simulation, DATA, DIAGNOSTIC,
+        ACCELERATION_DIAGNOSTIC, *acceleration_sources,
+    ]
     FREEZE.write_text(json.dumps({
         "model_version": trace["model_version"],
         "status": "FROZEN" if not gaps else "BLOCKED",

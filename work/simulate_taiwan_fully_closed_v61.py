@@ -11,6 +11,7 @@ import numpy as np
 
 import simulate_taiwan_fully_closed_v60 as v60
 from sectoral_economy_v61 import CoupledSectoralEconomicSystem
+from variant_batching import active_variant_layout, tile_frozen_draws
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,6 +30,16 @@ def sha256(path: Path) -> str:
 def load_frozen_draws(paths: int) -> dict[str, np.ndarray]:
     with np.load(OUT / "taiwan_v55_econometric_draws.npz") as data:
         available = min(value.shape[0] for value in data.values())
+        layout = active_variant_layout()
+        if layout is not None:
+            if paths != layout.total_paths:
+                raise ValueError("active variant layout and requested path count differ")
+            if layout.paths_per_variant > available:
+                raise ValueError(
+                    f"requested {layout.paths_per_variant} base paths but frozen posterior contains {available}"
+                )
+            base = {key: data[key][:layout.paths_per_variant].copy() for key in data.files}
+            return tile_frozen_draws(base, layout)
         if paths > available:
             raise ValueError(
                 f"requested {paths} paths but frozen posterior contains {available}"
