@@ -68,6 +68,18 @@ class MFGFactors:
     cascade_supply_loss: np.ndarray | None = None
     cascade_command_loss: np.ndarray | None = None
     cascade_recovery_need: np.ndarray | None = None
+    statistical_latent_factor: np.ndarray | None = None
+    statistical_regime_probability: np.ndarray | None = None
+    statistical_volatility: np.ndarray | None = None
+    statistical_change_probability: np.ndarray | None = None
+    wavelet_energy: np.ndarray | None = None
+    wavelet_coherence: np.ndarray | None = None
+    graph_wavelet_anomaly: np.ndarray | None = None
+    contact_military_loss: np.ndarray | None = None
+    contact_economic_loss: np.ndarray | None = None
+    contact_financial_loss: np.ndarray | None = None
+    contact_social_loss: np.ndarray | None = None
+    contact_recovery_need: np.ndarray | None = None
 
 
 class ContinuousMultiPopulationMFG:

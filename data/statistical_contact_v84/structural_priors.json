@@ -1,0 +1,73 @@
+{
+  "model_version": "V8.4-STATISTICAL-MULTISCALE-CONTACT",
+  "actor_order": ["china", "taiwan", "united_states", "japan"],
+  "online_estimator": {
+    "forgetting_factor": [0.94, 0.92, 0.95, 0.94],
+    "kalman_process_variance": [0.006, 0.009, 0.005, 0.006],
+    "kalman_observation_variance": [0.030, 0.040, 0.026, 0.030],
+    "garch_alpha": [0.10, 0.12, 0.09, 0.10],
+    "garch_beta": [0.84, 0.80, 0.86, 0.84],
+    "hawkes_decay": 0.72,
+    "hawkes_excitation": 0.18,
+    "change_point_threshold": 2.75,
+    "conformal_miscoverage": 0.10
+  },
+  "wavelet": {
+    "causal_scales_months": [2, 4, 8, 16],
+    "energy_decay": 0.86,
+    "coherence_decay": 0.90,
+    "graph_diffusion": 0.20,
+    "feature_cap": 3.5
+  },
+  "contact": {
+    "military_load": [0.038, 0.044, 0.034, 0.036],
+    "economic_load": [0.028, 0.035, 0.024, 0.027],
+    "financial_load": [0.020, 0.028, 0.018, 0.020],
+    "social_load": [0.022, 0.034, 0.018, 0.022],
+    "memory_decay": [0.995, 0.997, 0.994, 0.995],
+    "maximum_monthly_increment": 0.035,
+    "maximum_cumulative_loss": 0.95
+  },
+  "source_ledger": [
+    {
+      "source": "https://my.feishu.cn/docx/UILkd9443oiz7vxY3oxcI3UInRc",
+      "publisher": "project research specification",
+      "observation_date": "accessed 2026-10-21",
+      "unit": "nonparametric estimation and validation methods",
+      "identification": "scenario_prior",
+      "uncertainty": "bandwidth, support and finite-sample sensitivity required"
+    },
+    {
+      "source": "https://my.feishu.cn/docx/VhRddtP9eo6lHCx8IklchZNUnVc",
+      "publisher": "project research specification",
+      "observation_date": "accessed 2026-10-21",
+      "unit": "multivariate latent-state methods",
+      "identification": "scenario_prior",
+      "uncertainty": "actor-specific covariance and measurement invariance required"
+    },
+    {
+      "source": "https://my.feishu.cn/docx/RPExdc5awo6bOwxQyaccAE9hn5d",
+      "publisher": "project research specification",
+      "observation_date": "accessed 2026-10-21",
+      "unit": "time-series state-estimation methods",
+      "identification": "scenario_prior",
+      "uncertainty": "real-time vintages and rolling validation required"
+    },
+    {
+      "source": "https://my.feishu.cn/docx/UrjxdpJsLojd1txmubAcJc7fnZg",
+      "publisher": "project research specification",
+      "observation_date": "accessed 2026-10-21",
+      "unit": "causal multiscale feature methods",
+      "identification": "scenario_prior",
+      "uncertainty": "scale, boundary and false-discovery sensitivity required"
+    },
+    {
+      "source": "https://my.feishu.cn/docx/EO6tduC1QoVtA4xGiibcvC3BnOd",
+      "publisher": "project research specification",
+      "observation_date": "accessed 2026-10-21",
+      "unit": "contact-dissipation mechanisms",
+      "identification": "scenario_prior",
+      "uncertainty": "all dissipation rates require public-data calibration or interval sensitivity"
+    }
+  ]
+}
