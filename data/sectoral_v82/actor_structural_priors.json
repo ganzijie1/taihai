@@ -1,0 +1,34 @@
+{
+  "actor_order": ["CHN", "TWN", "USA", "JPN"],
+  "as_of": "2026-10-19",
+  "observed": {
+    "population_65_plus_share": [0.159, 0.209, 0.180, 0.292],
+    "food_self_sufficiency_calorie": [0.850, 0.3036, 0.900, 0.370],
+    "baseline_unemployment": [0.052, 0.034, 0.042, 0.025],
+    "sme_employment_share": [0.700, 0.780, 0.460, 0.700]
+  },
+  "bounded_calibration_priors": {
+    "industrial_concentration": [0.22, 0.62, 0.24, 0.30],
+    "state_enterprise_weight": [0.34, 0.08, 0.05, 0.06],
+    "labor_mobility": [0.48, 0.66, 0.82, 0.55],
+    "market_finance_access": [0.46, 0.70, 0.92, 0.74],
+    "agricultural_tfp_trend_annual": [0.010, 0.008, 0.014, 0.006]
+  },
+  "notes": {
+    "food_self_sufficiency_calorie": "TWN and JPN are official observations. CHN and USA are bounded calibration priors pending harmonized calorie-balance extraction and are not presented as observations.",
+    "sme_employment_share": "TWN is an official 2024 observation. Other actors are bounded priors because national definitions differ.",
+    "industrial_concentration": "Scenario prior used for bottleneck exposure; it is not a published HHI."
+  },
+  "sources": [
+    "https://www.stats.gov.cn/english/PressRelease/202602/t20260228_1962661.html",
+    "https://eng.dgbas.gov.tw/News_Content.aspx?n=4438&s=235721",
+    "https://www.moea.gov.tw/MNS/Populace/news/News.aspx?kind=1&menu_id=40&news_id=121491",
+    "https://agrstat.moa.gov.tw/moasdweb/inquire/Indicator.aspx",
+    "https://www.ndc.gov.tw/nc_8456_40407",
+    "https://www.maff.go.jp/j/press/kanbo/anpo/260807.html",
+    "https://www.maff.go.jp/e/policies/law_plan/attach/pdf/BasicPlan_2025_reference.pdf",
+    "https://ers.usda.gov/data-products/agricultural-productivity-in-the-united-states/methods",
+    "https://www.bls.gov/emp/data/input-output-matrix.htm",
+    "https://www.bea.gov/data/special-topics/integrated-bea-gdp-bls-productivity-account"
+  ]
+}

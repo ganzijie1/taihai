@@ -1,9 +1,9 @@
 # Taiwan Strait Coupled Model
 
 This repository contains the reproducible code path for the Taiwan Strait
-evolution and campaign model. V7.7 is the current frozen source specification
-and formal-result baseline. Its 30 registered scenario/case cells completed at
-128 paths and 360 months, and the independent result audit passed.
+evolution and campaign model. V8.3 is the current frozen source specification
+and formal-result baseline. Its nine registered variants completed all 270
+checkpoint cells, and the independent result audit passed.
 
 The model is a monthly, same-path coupled system. Its active layers include
 campaign and alliance intervention, continuous multi-population MFG, competing
@@ -24,21 +24,97 @@ geometry, nested CES production and a signed inertial coupled oscillator.
 
 - V5.3 formal-result baseline: retained as historical comparison
 - V7.7 traceability and equation-family coverage: 100%
-- V7.7 pre-simulation integrity, code-coupling and runtime audits: PASS
-- Frozen formal design: 128 paths, 360 months, 30 conditional cells
-- V7.7 result rows: 150; runtime diagnostic cells: 30
-- V7.7 result SHA-256: `5209782A9E0E06CB19AB1D3A3BDA232FEE7C4A0AB67C878348B2979D4CB5493B`
+- V8.3 pre-simulation integrity, code-coupling and runtime audits: PASS
+- V8.3 formal checkpoint design: nine variants and 270 validated cells
+- V8.3 runtime invariants and all registered matched-row ablations: PASS
+- V8.3 publication gate: PASS
 
 Passing diagnostics establishes accounting and software consistency. It does
 not establish empirical truth or classified-data-level predictive accuracy.
 
+## V7.9 information, criticality and scale extension
+
+V7.9 is implemented and frozen for a future complete run, but no V7.9 outcome
+simulation has been executed. It extends the V7.8 mixed potential/non-potential
+MFG with correlation-adjusted source exposure, asymmetric rate-distortion
+attention, lagged conditional-transfer-entropy Graphon calibration and one
+four-domain self-organized quasi-critical DEDS cascade. The cascade feeds the
+existing social, firm, financial, network and command states on the same path.
+A 16-to-8-to-4-node renormalization audit is read-only and never adjusts an
+outcome probability.
+
+The non-outcome preparation command is:
+
+```powershell
+python work/prepare_taiwan_v79.py
+```
+
+It writes only traceability, code-audit, deterministic-diagnostic and frozen
+specification records. The complete V7.9 runner remains protected by both the
+complete-model gate and `TAIWAN_ALLOW_COMPLETE_RUN=1`.
+
+## V8.0 statistical-field and analytical-mechanics extension
+
+V8.0 is implemented, frozen and has completed one formal 128-path, 360-month,
+30-cell checkpointed run. It adds a non-equilibrium four-domain residual
+field, self-consistently fitted DMFT memory and colored noise, event-tail and
+finite-resolution criticality diagnostics, and an analytical-mechanics
+constraint layer. The mechanics layer uses a discrete Lagrange-d'Alembert
+step, a skew Dirac interconnection, dissipative adjustment, and read-only
+Noether/PMP checks. It owns only residual adjustment coordinates and does not
+replace CGE, DSGE, logistics, command, social or continuous-MFG state owners.
+
+The residual field affects the current outer consumers through the existing
+cascade contract and affects MFG optimization with one explicit monthly lag.
+SOC evidence and Noether/PMP quantities are diagnostic only. No component
+patches terminal probabilities.
+
+```powershell
+python work/prepare_taiwan_v80.py
+```
+
+The preparation command runs diagnostics, coupling audits and manifest
+validation, then freezes the V8.0 specification without producing outcome
+probabilities. The completed run is stored as
+`outputs/taiwan_v80_simulation.json` and
+`outputs/taiwan_v80_results.csv`; its artifact-integrity audit is PASS.
+Publication validation remains blocked until one-at-a-time outcome ablations
+for the V8.0 statistical-field and analytical-mechanics additions are run.
+The checkpoint aggregate rows also omit case labels, so interpretation uses
+the correctly labelled conditional rows rather than the aggregate array.
+
+## V8.1--V8.3 completed extensions
+
+V8.1 adds differential-manifold state handling and its inherited ablations.
+V8.2 adds actor-specific agriculture, industrial organization, development and
+labor mechanisms without duplicating the CGE, DQ-SFC or structural-employment
+state owners. V8.3 adds particle intent and structural international-economics
+channels, including gravity/Eaton-Kortum, Melitz and external-liquidity
+ablations. All layers execute on the same monthly paths and feed the existing
+economic, social, MFG, DEDS and campaign consumers.
+
+The formal V8.3 run is checkpointed and guarded:
+
+```powershell
+python work/prepare_taiwan_v83.py
+$env:TAIWAN_ALLOW_COMPLETE_RUN='1'
+python work/run_taiwan_v83_formal.py
+python work/audit_taiwan_v83_results.py
+```
+
+The final audit reports all nine variants present, all 270 checkpoints valid,
+runtime invariants satisfied and the publication gate passed. Generated run
+outputs and checkpoints remain under `outputs/` and are intentionally excluded
+from Git; the repository publishes the code, compact public priors and methods
+documentation needed to rebuild them.
+
 ## Layout
 
-- `work/`: frozen V7.7 executable dependency tree and public GIS cache; paths
-  match the hashes recorded by the accepted specification
+- `work/`: executable dependency tree, preparation gates, checkpointed runners,
+  audits and public GIS cache through V8.3
 - `src/`: historical source mirror, diagnostics, audits, ablations and
   sensitivity scripts retained for version comparison
-- `data/`: compact aggregated IO/MRIO inputs required by the public code path
+- `data/`: compact aggregated IO/MRIO and V8.2--V8.3 structural-prior inputs
 - `artifacts/`: historical baselines plus V6.8--V7.7 traceability, audits,
   diagnostics, frozen specifications and the audited V7.7 formal result
 - `work/gis_data/`: cached aggregate public terrain and road-network inputs

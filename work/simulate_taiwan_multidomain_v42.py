@@ -1771,6 +1771,53 @@ def simulate_mechanisms(
                     if operations_system is not None else None
                 ),
             )
+            if mfg_factors.cascade_social_loss is not None:
+                cascade_social = np.clip(
+                    mfg_factors.cascade_social_loss, 0.0, 1.0
+                )
+                cascade_financial = np.clip(
+                    mfg_factors.cascade_financial_loss, 0.0, 1.0
+                )
+                cascade_supply = np.clip(
+                    mfg_factors.cascade_supply_loss, 0.0, 1.0
+                )
+                cascade_command = np.clip(
+                    mfg_factors.cascade_command_loss, 0.0, 1.0
+                )
+                # The cascade is solved inside the current DEDS month. Social
+                # effects are immediate; balance-sheet, production and command
+                # stocks carry the damage into the next monthly opening state.
+                s["actor_panic"] = np.clip(
+                    s["actor_panic"] + 0.045 * cascade_social, 0.0, 1.0
+                )
+                s["actor_network"] = np.clip(
+                    s["actor_network"]
+                    * (1.0 - 0.035 * cascade_social - 0.045 * cascade_command),
+                    0.0, 1.0,
+                )
+                s["actor_debt_stress"] = np.clip(
+                    s["actor_debt_stress"] + 0.020 * cascade_financial,
+                    0.0, 1.5,
+                )
+                sector_cascade = (
+                    0.014 * cascade_supply + 0.009 * cascade_financial
+                )[:, :, None]
+                s["actor_firm_distress"] = np.clip(
+                    s["actor_firm_distress"] + sector_cascade,
+                    0.0, 1.0,
+                )
+                s["actor_command"] = np.clip(
+                    s["actor_command"]
+                    * (1.0 - 0.040 * cascade_command[:, :, None]),
+                    0.03, 0.995,
+                )
+                command_eff = np.clip(
+                    command_eff * (1.0 - 0.040 * cascade_command),
+                    0.02, 1.0,
+                )
+                actor_shortage = np.clip(
+                    actor_shortage + 0.025 * cascade_supply, 0.0, 1.5
+                )
             s["actor_support"] = np.clip(mfg_factors.support, 0.01, 0.99)
             if mfg_factors.joint_action_field is not None:
                 joint_action = mfg_factors.joint_action_field

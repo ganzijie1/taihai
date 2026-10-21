@@ -63,6 +63,11 @@ class MFGFactors:
     bridge_cost: float = 0.0
     network_bottleneck_risk: float = 0.0
     network_sheaf_consistency: float = 1.0
+    cascade_social_loss: np.ndarray | None = None
+    cascade_financial_loss: np.ndarray | None = None
+    cascade_supply_loss: np.ndarray | None = None
+    cascade_command_loss: np.ndarray | None = None
+    cascade_recovery_need: np.ndarray | None = None
 
 
 class ContinuousMultiPopulationMFG:

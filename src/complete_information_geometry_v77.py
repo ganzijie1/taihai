@@ -209,6 +209,7 @@ class CompleteInformationGeometryV77(DeepCausalOptimalTransportGeometryV66):
         self.ib_broyden_fallbacks = 0
         self.ib_least_squares_fallbacks = 0
         self.ib_lbfgsb_fallbacks = 0
+        self.ib_final_polishing_fallbacks = 0
 
     @staticmethod
     def _entropy(probability: np.ndarray, axis: int = -1) -> np.ndarray:
@@ -463,6 +464,30 @@ class CompleteInformationGeometryV77(DeepCausalOptimalTransportGeometryV66):
                     objective_increases[selected], refined_increase
                 )
                 self.ib_broyden_fallbacks += int(np.sum(accepted_broyden))
+        # Near-degenerate support can leave accelerated solvers just above the
+        # acceptance gate even though the classical BA map remains monotone.
+        # Polish only those unresolved rows with the original fixed-point map.
+        unresolved = residuals > 1.0e-7
+        if np.any(unresolved):
+            selected = np.flatnonzero(unresolved)
+            (polished, polished_residual, polished_raw_residual,
+             polished_iterations, polished_distortion,
+             polished_increase) = _parallel_blahut_arimoto(
+                flat_prior[selected], flat_encoder[selected].copy(),
+                flat_observation[selected], self.bottleneck_beta,
+                2.5e-8, 100000, self.ib_support_threshold,
+                self.ib_support_mass_limit,
+            )
+            flat_encoder[selected] = polished
+            residuals[selected] = polished_residual
+            raw_conditional_residuals[selected] = polished_raw_residual
+            iteration_counts[selected] += polished_iterations
+            flat_distortion[selected] = polished_distortion
+            objective_increases[selected] = np.maximum(
+                objective_increases[selected], polished_increase
+            )
+            self.ib_final_polishing_fallbacks += len(selected)
+
         q = flat_encoder.reshape(original_shape + (latent,))
         distortion = flat_distortion.reshape(original_shape + (latent,))
         residual = float(np.max(residuals))
@@ -592,9 +617,11 @@ class CompleteInformationGeometryV77(DeepCausalOptimalTransportGeometryV66):
             "broyden_fallback_count": self.ib_broyden_fallbacks,
             "least_squares_fallback_count": self.ib_least_squares_fallbacks,
             "lbfgsb_fallback_count": self.ib_lbfgsb_fallbacks,
+            "final_ba_polishing_fallback_count": self.ib_final_polishing_fallbacks,
             "solver_backend": (
                 "Numba-parallel log-domain Blahut-Arimoto with deterministic "
-                "continuation and SciPy Broyden rare-case fallback"
+                "continuation, SciPy nonlinear acceleration, and final monotone "
+                "BA polishing for near-degenerate support"
             ),
             "causal_clock": "month-t posterior plans month-(t+1) source exposure",
             "pathwise": True,

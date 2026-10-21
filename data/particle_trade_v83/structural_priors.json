@@ -1,0 +1,77 @@
+{
+  "model_version": "V8.3-PARTICLE-INTERNATIONAL-ECONOMICS",
+  "as_of": "2026-10-20",
+  "actor_order": ["CHN", "TWN", "USA", "JPN"],
+  "trade": {
+    "trade_elasticity_theta": [4.6, 5.2, 4.1, 4.8],
+    "ppml_border_cost": [0.18, 0.22, 0.12, 0.15],
+    "technology_level": [0.96, 1.12, 1.18, 1.10],
+    "melitz_entry_cost": [0.34, 0.27, 0.20, 0.25],
+    "melitz_exit_sensitivity": [0.30, 0.38, 0.24, 0.29],
+    "initial_external_liquidity": [0.72, 0.86, 1.00, 0.94],
+    "capital_control_strength": [0.78, 0.36, 0.18, 0.24],
+    "third_party_rerouting_capacity": [0.62, 0.48, 0.78, 0.70]
+  },
+  "particle": {
+    "intent_particles": 64,
+    "opinion_compromise": [0.20, 0.24, 0.18, 0.19],
+    "process_noise": [0.055, 0.065, 0.050, 0.050],
+    "observation_noise": [0.16, 0.18, 0.15, 0.15],
+    "resampling_ess_fraction": 0.50,
+    "finite_player_particles": 96,
+    "finite_player_check_interval_months": 12,
+    "ams_replicas": 128,
+    "ams_kill_fraction": 0.10
+  },
+  "identification": {
+    "trade_elasticity_theta": "bounded literature prior; not a four-party wartime estimate",
+    "ppml_border_cost": "scenario prior awaiting harmonized bilateral PPML panel estimation",
+    "technology_level": "normalized calibration prior informed by OECD ICIO and productivity accounts",
+    "firm_entry_exit": "bounded Melitz-style scenario prior",
+    "particle_noise": "bounded state-space prior; intended for filtering and sensitivity analysis"
+  },
+  "sources": [
+    {
+      "url": "https://www.wto.org/english/res_e/reser_e/structural_gravity_e.htm",
+      "publisher": "World Trade Organization",
+      "observation_date": "accessed 2026-10-20",
+      "unit": "structural gravity methodology",
+      "identification": "estimator specification"
+    },
+    {
+      "url": "https://www.oecd.org/en/data/datasets/inter-country-input-output-tables.html",
+      "publisher": "OECD",
+      "observation_date": "accessed 2026-10-20",
+      "unit": "inter-country input-output flows",
+      "identification": "observed accounts"
+    },
+    {
+      "url": "https://www.nber.org/papers/w6253",
+      "publisher": "NBER",
+      "observation_date": "1997",
+      "unit": "Eaton-Kortum technology and trade model",
+      "identification": "structural model"
+    },
+    {
+      "url": "https://www.nber.org/papers/w8881",
+      "publisher": "NBER",
+      "observation_date": "2002",
+      "unit": "Melitz heterogeneous-firm model",
+      "identification": "structural model"
+    },
+    {
+      "url": "https://projecteuclid.org/journals/annals-of-statistics/volume-33/issue-5/Recursive-Monte-Carlo-filters--Algorithms-and-theoretical-analysis/10.1214/009053605000000426.full",
+      "publisher": "Project Euclid / Annals of Statistics",
+      "observation_date": "2005",
+      "unit": "sequential Monte Carlo methodology",
+      "identification": "estimator specification"
+    },
+    {
+      "url": "https://arxiv.org/abs/1707.00950",
+      "publisher": "arXiv",
+      "observation_date": "2017",
+      "unit": "adaptive multilevel splitting methodology",
+      "identification": "rare-event estimator specification"
+    }
+  ]
+}
